@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>누적 스터디 트래커 & 툭탁 (ID 로그인 버전)</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        :root {
+            --bg-color: #f4f6f9;
+            --primary-color: #4dabf7;
+            --text-main: #212529;
+            --text-sub: #495057;
+            --border-color: #e9ecef;
+            --story-color: #ffffff;
+            --pattern-color: #E8F4EC;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        /* 🔒 로그인 오버레이 스타일 (ID/PW 방식) */
+        .login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        .login-overlay.active {
+            display: flex;
+        }
+        .login-overlay h1 {
+            font-size: 24px;
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-weight: 800;
+        }
+        .login-overlay p {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 24px;
+            line-height: 1.5;
+            word-break: keep-all;
+        }
+        .login-box {
+            width: 100%;
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .login-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid #dee2e6;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+        .login-input:focus {
+            outline: none;
+            border-color: #4dabf7;
+            box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.2);
+        }
+        .btn-login {
+            background: #339af0;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+        .btn-login:active { transform: scale(0.98); }
+        .btn-signup {
+            background: transparent;
+            color: #495057;
+            border: 1px solid #ced4da;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-signup:active { background: #f1f3f5; }
+        
+        .auth-error {
+            color: #fa5252;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 8px;
+            min-height: 18px;
+        }
+
+        /* 로딩 스피너 */
+        .loading-spinner {
+            display: none;
+            width: 40px; height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4dabf7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 상단 네비게이션 탭 */
+        .nav-tabs {
+            display: flex;
+            background: white;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+        }
+        .nav-tab {
+            flex: 1; text-align: center; padding: 16px 0; font-size: 16px; font-weight: 700;
+            color: #adb5bd; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s;
+        }
+        .nav-tab.active { color: #2b8a3e; border-bottom: 3px solid #2b8a3e; }
+
+        /* 날짜 시뮬레이터 */
+        .date-simulator {
+            position: fixed; top: 55px; left: 0; width: 100%; background: #343a40; color: white;
+            padding: 8px 12px; text-align: center; font-size: 13px; z-index: 99;
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        .date-simulator button {
+            background: #4dabf7; border: none; color: white; padding: 4px 10px;
+            border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+        }
+
+        .main-container { padding: 110px 20px 50px 20px; max-width: 600px; margin: 0 auto; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        body.tuktak-mode .nav-tabs, body.tuktak-mode .date-simulator { display: none !important; }
+        body.tuktak-mode .main-container { padding-top: 24px; }
+
+        .section-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; margin-top: 8px; }
+        .section-header h2 { font-size: 20px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+        .section-header .sub-text { font-size: 14px; font-weight: 600; color: #64748b; }
+
+        /* 🔥 오늘의 미션 카드 */
+        .todo-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+        .mission-card {
+            background: #ffffff; border-radius: 20px; padding: 20px 22px; border-left: 7px solid #5ba4ff;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04); display: flex; justify-content: space-between;
+            align-items: center; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .mission-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(91, 164, 255, 0.15); }
+        .mission-card.completed { border-left-color: #adb5bd; opacity: 0.65; }
+        .mission-left { display: flex; flex-direction: column; gap: 8px; }
+        .mission-top-row { display: flex; align-items: center; gap: 10px; }
+        .day-pill { background: #f1f5f9; color: #334155; font-weight: 800; font-size: 12px; padding: 5px 10px; border-radius: 8px; letter-spacing: 0.3px; }
+        .mission-desc-green { color: #2b8a3e; font-weight: 700; font-size: 14px; }
+        .mission-main-title { font-size: 20px; font-weight: 800; color: #1e293b; }
+        .play-circle-btn {
+            width: 48px; height: 48px; border-radius: 50%; background: #f8fafc; border: 1.5px solid #e2e8f0;
+            display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 16px; flex-shrink: 0; transition: all 0.2s;
+        }
+        .mission-card:hover .play-circle-btn { background: #5ba4ff; border-color: #5ba4ff; color: white; }
+        .mission-empty { background: white; border-radius: 20px; padding: 28px 20px; text-align: center; color: #64748b; font-size: 15px; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,0.03); }
+
+        /* 📊 12 챕터 안내 */
+        .schedule-info-box { background: #eef4ff; border-radius: 16px; padding: 16px 20px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .schedule-info-line { color: #1d4ed8; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; line-height: 1.4; }
+
+        /* 12 챕터 그리드 */
+        .chapter-box { background: white; border-radius: 18px; padding: 18px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid var(--border-color); }
+        .chapter-title { font-size: 16px; font-weight: 800; margin-bottom: 14px; color: #1e293b; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+        .task-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .task-cell {
+            border-radius: 12px; padding: 12px 4px; text-align: center; font-size: 12px; font-weight: 700;
+            color: #94a3b8; background: #f8fafc; border: 1px solid #e2e8f0; display: flex; flex-direction: column;
+            align-items: center; gap: 6px; position: relative; transition: all 0.2s; cursor: pointer;
+        }
+        .task-cell:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.06); }
+        .task-cell.story-day { background-color: var(--story-color); }
+        .task-cell.pattern-day { background-color: var(--pattern-color); }
+        .task-icon { font-size: 18px; }
+        .task-cell.active-today { border: 2px solid #5ba4ff; color: #1e293b; box-shadow: 0 4px 10px rgba(91, 164, 255, 0.2); }
+        
+        .task-cell.completed { background: #ebfbee !important; border-color: #8ce99a; color: #2b8a3e; }
+        .task-cell.completed::after { content: 'O'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; color: rgba(43, 138, 62, 0.35); font-weight: 900; pointer-events: none; }
+        
+        .task-cell.missed { background: #fff5f5 !important; border: 1.5px solid #ffc9c9; color: #e03131; }
+        .task-cell.missed::after { content: 'X'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; color: rgba(224, 49, 49, 0.3); font-weight: 900; pointer-events: none; }
+
+        /* 툭탁 뷰 */
+        .tuktak-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .header-left-badges { display: flex; align-items: center; gap: 8px; }
+        .task-badge-header { background: #343a40; color: #ffffff; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 15px; letter-spacing: 0.5px; }
+        .card-counter { background: #ffffff; border: 1.5px solid #dee2e6; padding: 5px 14px; border-radius: 20px; font-weight: 700; font-size: 14px; color: #495057; }
+        .back-btn { background: #e9ecef; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; color: #495057; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+        .tuktak-card { background: white; border-radius: 24px; height: 400px; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.06); border: 2px solid #4dabf7; position: relative; overflow: hidden; margin-bottom: 14px; }
+        .card-half { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; }
+        .kor-half { flex: 0.9; padding: 16px 20px; border-bottom: 2px dashed #e9ecef; background: #ffffff; }
+        .eng-half { flex: 2.3; padding: 24px 20px; background: #f8f9fa; cursor: pointer; }
+        .eng-half.revealed { background: white; cursor: default; }
+
+        .text-content { font-weight: 700; line-height: 1.45; word-break: keep-all; }
+        .kor-text { font-size: 20px; color: #1864ab; }
+        .eng-box { display: none; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+        .eng-half.revealed .eng-box { display: flex; }
+        .eng-text { font-size: 23px; color: #2b8a3e; font-weight: 800; }
+        .ipa-text { font-size: 16px; color: #868e96; font-weight: 500; background: #f1f3f5; padding: 6px 14px; border-radius: 10px; }
+        .eng-half:not(.revealed)::after { content: '💡 터치해서 영어 정답과 발음기호 확인'; color: #adb5bd; font-size: 15px; font-weight: 600; }
+
+        /* 네이티브 오디오 버튼 */
+        .native-audio-row { display: flex; justify-content: center; margin-bottom: 20px; }
+        .btn-native-audio {
+            width: 100%; background: #edf2ff; color: #364fc7; border: 1.5px solid #bac8ff; border-radius: 16px;
+            padding: 14px 20px; font-size: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; gap: 8px; transition: all 0.15s; box-shadow: 0 4px 10px rgba(54, 79, 199, 0.08);
+        }
+        .btn-native-audio:active { transform: scale(0.98); background: #dbe4ff; }
+
+        /* 하단 액션바 */
+        .bottom-actions { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 14px 20px 28px 20px; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+        .action-left { display: flex; gap: 10px; }
+        .icon-btn { height: 48px; padding: 0 16px; border-radius: 24px; border: 1.5px solid #dee2e6; background: white; font-size: 15px; font-weight: 700; color: #495057; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: all 0.2s; }
+        .icon-btn.jub-btn { filter: grayscale(100%); opacity: 0.7; }
+        .icon-btn.jub-btn.active { filter: none; opacity: 1; background: #fff9db; border-color: #fcc419; color: #e67700; box-shadow: 0 2px 8px rgba(252, 196, 25, 0.3); }
+        .next-btn { background: #339af0; color: white; border: none; border-radius: 24px; padding: 0 28px; height: 48px; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(51, 154, 240, 0.3); transition: all 0.2s; }
+        .next-btn:active { transform: scale(0.98); }
+
+        /* 모달 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .edit-modal { background: white; width: 90%; max-width: 400px; border-radius: 20px; padding: 24px; }
+        .edit-modal h3 { margin-bottom: 14px; font-size: 18px; color: #212529; }
+        .edit-label { font-size: 12px; font-weight: 700; color: #868e96; margin-bottom: 4px; display: block; }
+        .edit-modal textarea { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 10px; margin-bottom: 14px; font-size: 15px; resize: none; font-family: inherit; }
+        .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+        .modal-btns button { padding: 10px 18px; border: none; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; }
+        .btn-cancel { background: #f1f3f5; color: #495057; }
+        .btn-save { background: #339af0; color: white; }
+        .btn-add-new { background: #2b8a3e; color: white; }
+        
+        /* 장바구니 리스트 */
+        .empty-state { text-align: center; padding: 60px 20px; color: #868e96; }
+        .empty-state i { font-size: 48px; margin-bottom: 16px; color: #dee2e6; }
+        .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: #495057; }
+        .jub-list { display: flex; flex-direction: column; gap: 12px; }
+        .jub-item { background: white; border: 1px solid var(--border-color); border-radius: 14px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .jub-item-text .kor { font-size: 14px; color: #495057; margin-bottom: 4px; font-weight: 600; }
+        .jub-item-text .eng { font-size: 16px; font-weight: 700; color: #2b8a3e; }
+        .btn-remove-jub { background: none; border: none; color: #fa5252; font-size: 18px; cursor: pointer; padding: 8px;}
+    </style>
+</head>
+<body>
+
+    <!-- 🔒 로그인 오버레이 (ID/PW 방식) -->
+    <div class="login-overlay active" id="login-overlay">
+        <div class="loading-spinner" id="login-spinner"></div>
+        <div id="login-content" class="login-box">
+            <h1>스터디 트래커 & 툭탁</h1>
+            <p>개인별 진도 기록과 줍줍 문장을 저장합니다.<br>이메일 형식의 ID를 만들어주세요.<br>(예: <b>gildong@study.com</b>)</p>
+            
+            <input type="email" id="login-email" class="login-input" placeholder="이메일 (ID)" autocomplete="off">
+            <input type="password" id="login-pw" class="login-input" placeholder="비밀번호 (6자리 이상)" autocomplete="off">
+            
+            <div id="auth-error" class="auth-error"></div>
+
+            <button class="btn-login" onclick="handleLogin()">로그인</button>
+            <button class="btn-signup" onclick="handleSignup()">새로 가입하기</button>
+        </div>
+    </div>
+
+    <!-- 탭 네비게이션 -->
+    <div class="nav-tabs">
+        <div class="nav-tab active" onclick="switchView('tracker')">📅 진도 트래커</div>
+        <div class="nav-tab" onclick="switchView('basket')">🧺 장바구니 (줍줍)</div>
+    </div>
+
+    <!-- 상단 시뮬레이터 (로그아웃 버튼) -->
+    <div class="date-simulator">
+        <span id="currentDateDisplay"></span>
+        <button onclick="changeDate(-1)">◀ 이전 날</button>
+        <button onclick="changeDate(1)">다음 날 ▶</button>
+        <button onclick="resetDate()" style="background:#495057;">10/26 리셋</button>
+        <button onclick="signOut()" style="background:#fa5252; margin-left: 10px;">로그아웃</button>
+    </div>
+
+    <div class="main-container">
+        
+        <!-- 1. 트래커 뷰 -->
+        <div id="view-tracker" class="view-section active">
+            <!-- 🔥 오늘의 미션 섹션 -->
+            <div class="section-header">
+                <h2>🔥 오늘의 미션</h2>
+                <span class="sub-text">(클릭 시 학습 진입)</span>
+            </div>
+            <div id="todo-list-container" class="todo-list"></div>
+
+            <!-- 📊 12 챕터 누적 스케줄 조망 섹션 -->
+            <div class="section-header">
+                <h2>📊 12 챕터 누적 스케줄 조망</h2>
+                <span class="sub-text">(O/X 표시 · 클릭해 재학습)</span>
+            </div>
+            <div class="schedule-info-box">
+                <div class="schedule-info-line">💡 Day 0, +1, +2는 기본 문장으로 훈련합니다.</div>
+                <div class="schedule-info-line">💡 Day +3, +5는 장바구니(🧺)에 담은 문장만 복습합니다!</div>
+            </div>
+            
+            <div id="tracker-grid"></div>
+        </div>
+
+        <!-- 2. 장바구니 뷰 -->
+        <div id="view-basket" class="view-section">
+            <div class="section-header">
+                <h2>🧺 나의 줍줍 & 변형 문장</h2>
+            </div>
+            <div class="schedule-info-box">
+                <div class="schedule-info-line">💡 학습 중 🧺 버튼으로 담았거나 ✏️ 버튼으로 변형한 문장들입니다.</div>
+                <div class="schedule-info-line">💡 Day +3, +5 복습 시 이곳의 문장들만 카드로 출제됩니다!</div>
+            </div>
+            <div id="jub-container"></div>
+        </div>
+
+        <!-- 3. 툭탁 학습 뷰 -->
+        <div id="view-tuktak" class="view-section">
+            <div class="tuktak-header">
+                <div class="header-left-badges">
+                    <div class="task-badge-header" id="tuktak-badge">MS 01</div>
+                    <div class="card-counter" id="tuktak-counter">1 / 24</div>
+                </div>
+                <button class="back-btn" onclick="exitTuktak()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- 분할 카드 -->
+            <div class="tuktak-card">
+                <div class="card-half kor-half">
+                    <div class="text-content kor-text" id="tuktak-kor"></div>
+                </div>
+                <div class="card-half eng-half" id="eng-half" onclick="revealAnswer()">
+                    <div class="eng-box">
+                        <div class="text-content eng-text" id="tuktak-eng"></div>
+                        <div class="ipa-text" id="tuktak-ipa"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🎧 원어민 음성 듣기 버튼 -->
+            <div class="native-audio-row">
+                <button class="btn-native-audio" onclick="playNativeAudio()">
+                    🎧 원어민 음성 듣기
+                </button>
+            </div>
+
+            <!-- 하단 컨트롤 바 -->
+            <div class="bottom-actions">
+                <div class="action-left">
+                    <button class="icon-btn jub-btn" id="btn-jub" onclick="toggleCurrentJub()">
+                        🧺 <span id="jub-status-text">줍줍</span>
+                    </button>
+                    <button class="icon-btn" onclick="openEditModal()">
+                        ✏️ 변형
+                    </button>
+                </div>
+                <button class="next-btn" id="btn-next" onclick="handleNextButton()">
+                    정답 확인 <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ✏️ 내 맛대로 문장 변형 모달 -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="edit-modal">
+            <h3>✏️ 내 맛대로 문장 변형</h3>
+            <span class="edit-label">한글 뜻 (내 상황에 맞게 수정)</span>
+            <textarea id="edit-kor" rows="2"></textarea>
+            <span class="edit-label">영어 문장 (내 표현으로 수정)</span>
+            <textarea id="edit-eng" rows="3"></textarea>
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeEditModal()">취소</button>
+                <button class="btn-save" onclick="saveEditedJub(true)" title="원본 자리를 덮어씁니다.">[현재 카드 덮어쓰기]</button>
+                <button class="btn-add-new" onclick="saveEditedJub(false)" title="같은 패턴의 새로운 카드로 장바구니에 하나 더 추가합니다.">[+ 새 카드로 추가]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 오디오 플레이어 -->
+    <audio id="native-audio-player"></audio>
+
+    <!-- ⭐ 외부 data.js 파일 연동 -->
+    <script src="data.js"></script>
+
+    <!-- 🔥 Firebase SDK 추가 (Compat 버전) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // =========================================================================
+        // 🚀 FIREBASE 연동 설정 (ID/PW 방식)
+        // =========================================================================
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDa1T4SCiHKrWjE077VE027eJMfSa4LKcQ",
+            authDomain: "study-koboogy.firebaseapp.com",
+            projectId: "study-koboogy",
+            storageBucket: "study-koboogy.firebasestorage.app",
+            messagingSenderId: "886555559774",
+            appId: "1:886555559774:web:7eec83679a72d9fedd31cf",
+            measurementId: "G-91DS51YVJM"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUserUid = null;
+        let userDB = { completedTasks: {}, jubs: [] };
+
+        // DOM 요소
+        const loginOverlay = document.getElementById('login-overlay');
+        const loginContent = document.getElementById('login-content');
+        const loginSpinner = document.getElementById('login-spinner');
+        const errText = document.getElementById('auth-error');
+        const emailInput = document.getElementById('login-email');
+        const pwInput = document.getElementById('login-pw');
+
+        // 인증 상태 감지
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // 로그인 성공
+                currentUserUid = user.uid;
+                loginContent.style.display = 'none';
+                loginSpinner.style.display = 'block';
+                
+                await loadUserDataFromFirebase();
+                loginOverlay.classList.remove('active');
+            } else {
+                // 로그아웃 상태
+                currentUserUid = null;
+                userDB = { completedTasks: {}, jubs: [] };
+                loginSpinner.style.display = 'none';
+                loginContent.style.display = 'flex';
+                loginOverlay.classList.add('active');
+                emailInput.value = '';
+                pwInput.value = '';
+                errText.innerText = '';
+            }
+        });
+
+        // 📝 로그인 처리
+        function handleLogin() {
+            const email = emailInput.value.trim();
+            const pw = pwInput.value.trim();
+            if(!email || !pw) { errText.innerText = "이메일과 비밀번호를 모두 입력해주세요."; return; }
+            
+            errText.innerText = "로그인 중...";
+            auth.signInWithEmailAndPassword(email, pw)
+                .catch(err => {
+                    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                        errText.innerText = "아이디나 비밀번호가 틀렸습니다.";
+                    } else if (err.code === 'auth/invalid-email') {
+                        errText.innerText = "올바른 이메일 형식이 아닙니다. (예: user@study.com)";
+                    } else {
+                        errText.innerText = "로그인 오류가 발생했습니다. (" + err.message + ")";
+                    }
+                });
+        }
+
+        // 📝 가입 처리
+        function handleSignup() {
+            const email = emailInput.value.trim();
+            const pw = pwInput.value.trim();
+            if(!email || !pw) { errText.innerText = "가입할 이메일과 비밀번호를 입력해주세요."; return; }
+            if(pw.length < 6) { errText.innerText = "비밀번호는 6자리 이상이어야 합니다."; return; }
+
+            errText.innerText = "가입 처리 중...";
+            auth.createUserWithEmailAndPassword(email, pw)
+                .catch(err => {
+                    if (err.code === 'auth/email-already-in-use') {
+                        errText.innerText = "이미 가입된 아이디(이메일)입니다.";
+                    } else if (err.code === 'auth/invalid-email') {
+                        errText.innerText = "올바른 이메일 형식이 아닙니다. (예: user@study.com)";
+                    } else {
+                        errText.innerText = "가입 오류가 발생했습니다. 파이어베이스 콘솔에서 Authentication > 이메일/비밀번호 로그인을 '사용 설정' 했는지 확인해주세요.";
+                    }
+                });
+        }
+
+        // 🚪 로그아웃
+        function signOut() {
+            if(confirm("정말 로그아웃 하시겠습니까?")) {
+                auth.signOut();
+            }
+        }
+
+        // Firebase에서 데이터 로드
+        async function loadUserDataFromFirebase() {
+            if (!currentUserUid) return;
+            try {
+                const docRef = db.collection("studyUsers").doc(currentUserUid);
+                const docSnap = await docRef.get();
+
+                if (docSnap.exists) {
+                    userDB = docSnap.data();
+                    if (!userDB.completedTasks) userDB.completedTasks = {};
+                    if (!userDB.jubs) userDB.jubs = [];
+                } else {
+                    userDB = { completedTasks: {}, jubs: [] };
+                    await docRef.set(userDB);
+                }
+
+                updateDateDisplay();
+                renderBasket();
+            } catch (e) {
+                console.error("데이터 로드 오류:", e);
+                alert("서버에서 데이터를 불러오는 데 실패했습니다.");
+            }
+        }
+
+        // Firebase에 데이터 저장
+        async function saveDB() {
+            if (!currentUserUid) return;
+            try {
+                await db.collection("studyUsers").doc(currentUserUid).set(userDB);
+            } catch (e) {
+                console.error("데이터 저장 오류:", e);
+            }
+        }
+
+
+        // =========================================================================
+        // 📅 날짜 및 스케줄 엔진 (10/26 시작 기본값)
+        // =========================================================================
+        const START_DATE_STR = "2026-10-26";
+        let simulatedDate = new Date("2026-10-26T12:00:00");
+        
+        function updateDateDisplay() {
+            const options = { month: 'numeric', day: 'numeric', weekday: 'short' };
+            document.getElementById('currentDateDisplay').innerText = `📅 기준일: ${simulatedDate.toLocaleDateString('ko-KR', options)}`;
+            renderTracker();
+        }
+        function changeDate(days) {
+            simulatedDate.setDate(simulatedDate.getDate() + days);
+            updateDateDisplay();
+        }
+        function resetDate() {
+            simulatedDate = new Date("2026-10-26T12:00:00");
+            updateDateDisplay();
+        }
+
+        function getStudyDaysDiff(start, current) {
+            let count = 0;
+            let cur = new Date(start);
+            cur.setHours(12,0,0,0);
+            let end = new Date(current);
+            end.setHours(12,0,0,0);
+            
+            if (end < cur) return -1;
+            
+            while(cur < end) {
+                const day = cur.getDay();
+                if (day !== 0 && day !== 6) { count++; }
+                cur.setDate(cur.getDate() + 1);
+            }
+            return count;
+        }
+
+        const taskOffsets = {
+            "Day 0": 0, "Day +1": 1, "Day +2": 2, "Day +3": 3, "Day +5": 5
+        };
+
+        const taskLabels = {
+            "Day 0": { icon: "📖", name: "진도", desc: "본문(MS/RC) 흐름 파악", type: "story" },
+            "Day +1": { icon: "✍️", name: "확장", desc: "UE 표현 활용 줍줍&변형", type: "pattern" },
+            "Day +2": { icon: "🎭", name: "스토리", desc: "본문 달달 복습(MS/RC)", type: "story" },
+            "Day +3": { icon: "🔄", name: "반복", desc: "줍줍&변형 달달 복습", type: "pattern" },
+            "Day +5": { icon: "✨", name: "새김", desc: "나만의 엑기스 최종 복습", type: "pattern" }
+        };
+
+        function getChapterSchedule() {
+            let schedule = [];
+            for(let ch=1; ch<=12; ch++) {
+                let chStartOffset = (ch - 1) * 2;
+                let chData = { ch: ch, tasks: {} };
+                
+                Object.keys(taskOffsets).forEach(dayLabel => {
+                    let requiredStudyDays = chStartOffset + taskOffsets[dayLabel];
+                    chData.tasks[dayLabel] = {
+                        requiredStudyDays: requiredStudyDays,
+                        taskId: `CH${ch < 10 ? '0'+ch : ch}-${dayLabel}`
+                    };
+                });
+                schedule.push(chData);
+            }
+            return schedule;
+        }
+
+        // =========================================================================
+        // 🖥️ 화면(View) 전환
+        // =========================================================================
+        function switchView(viewName) {
+            stopNativeAudio();
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            document.body.classList.remove('tuktak-mode');
+            
+            if(viewName === 'tracker') {
+                document.querySelectorAll('.nav-tab')[0].classList.add('active');
+                document.getElementById('view-tracker').classList.add('active');
+                renderTracker();
+            } else if (viewName === 'basket') {
+                document.querySelectorAll('.nav-tab')[1].classList.add('active');
+                document.getElementById('view-basket').classList.add('active');
+                renderBasket();
+            }
+        }
+
+        // =========================================================================
+        // 📅 트래커 & 오늘의 미션 렌더링
+        // =========================================================================
+        function renderTracker() {
+            const grid = document.getElementById('tracker-grid');
+            const todoContainer = document.getElementById('todo-list-container');
+            grid.innerHTML = '';
+            todoContainer.innerHTML = '';
+            
+            const isWeekend = (simulatedDate.getDay() === 0 || simulatedDate.getDay() === 6);
+            const currentStudyDays = getStudyDaysDiff(new Date(START_DATE_STR + "T12:00:00"), simulatedDate);
+            const schedule = getChapterSchedule();
+
+            let todayTasks = [];
+
+            schedule.forEach(chInfo => {
+                let chStr = chInfo.ch < 10 ? `0${chInfo.ch}` : `${chInfo.ch}`;
+                let box = document.createElement('div');
+                box.className = 'chapter-box';
+                
+                let title = document.createElement('div');
+                title.className = 'chapter-title';
+                title.innerText = `Chapter ${chStr}`;
+                box.appendChild(title);
+
+                let taskGrid = document.createElement('div');
+                taskGrid.className = 'task-grid';
+
+                Object.keys(taskOffsets).forEach(dayLabel => {
+                    let tInfo = chInfo.tasks[dayLabel];
+                    let uiInfo = taskLabels[dayLabel];
+                    
+                    let cell = document.createElement('div');
+                    cell.className = `task-cell ${uiInfo.type}-day`;
+                    
+                    let isCompleted = userDB.completedTasks[tInfo.taskId] === true;
+                    let isToday = (!isWeekend && tInfo.requiredStudyDays === currentStudyDays);
+                    let isFuture = tInfo.requiredStudyDays > currentStudyDays;
+                    let isMissed = (tInfo.requiredStudyDays < currentStudyDays) && !isCompleted;
+
+                    cell.innerHTML = `
+                        <span class="task-icon">${uiInfo.icon}</span>
+                        <span>${uiInfo.name}</span>
+                    `;
+
+                    if (isToday) {
+                        todayTasks.push({ chStr, dayLabel, tInfo, uiInfo, isCompleted });
+                    }
+
+                    if (isCompleted) {
+                        cell.classList.add('completed');
+                    } else if (isToday) {
+                        cell.classList.add('active-today');
+                    } else if (isMissed) {
+                        cell.classList.add('missed');
+                    } else if (isFuture) {
+                        cell.style.opacity = '0.45';
+                    }
+
+                    cell.onclick = () => startTuktak(chStr, dayLabel);
+                    taskGrid.appendChild(cell);
+                });
+
+                box.appendChild(taskGrid);
+                grid.appendChild(box);
+            });
+
+            if (isWeekend) {
+                todoContainer.innerHTML = `<div class="mission-empty">🎉 주말입니다! 아래 스케줄 표에서 X 표시된 진도나 복습하고 싶은 챕터를 자유롭게 클릭해 학습해보세요.</div>`;
+            } else if (todayTasks.length === 0) {
+                todoContainer.innerHTML = `<div class="mission-empty">오늘 할당된 학습 미션이 없습니다. 아래 표에서 원하는 진도를 눌러 복습해보세요!</div>`;
+            } else {
+                todayTasks.forEach(item => {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = `mission-card ${item.isCompleted ? 'completed' : ''}`;
+                    cardEl.onclick = () => startTuktak(item.chStr, item.dayLabel);
+
+                    cardEl.innerHTML = `
+                        <div class="mission-left">
+                            <div class="mission-top-row">
+                                <span class="day-pill">${item.dayLabel.toUpperCase()}</span>
+                                <span class="mission-desc-green">${item.uiInfo.desc}</span>
+                            </div>
+                            <div class="mission-main-title">Chapter ${item.chStr} - ${item.uiInfo.name}</div>
+                        </div>
+                        <div class="play-circle-btn" style="${item.isCompleted ? 'background:#ebfbee; border-color:#8ce99a; color:#2b8a3e; font-size:20px;' : ''}">
+                            ${item.isCompleted ? 'O' : '<i class="fas fa-play" style="margin-left:2px;"></i>'}
+                        </div>
+                    `;
+                    todoContainer.appendChild(cardEl);
+                });
+            }
+        }
+
+        // =========================================================================
+        // 🧺 장바구니 렌더링
+        // =========================================================================
+        function renderBasket() {
+            const container = document.getElementById('jub-container');
+            if(userDB.jubs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-basket-shopping"></i>
+                        <h3>장바구니가 비어있습니다.</h3>
+                        <p>학습 중에 🧺 버튼을 눌러 문장을 담거나<br>✏️ 버튼으로 내 맛대로 변형해 보세요!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="jub-list">';
+            userDB.jubs.slice().reverse().forEach((j, index) => {
+                let actualIndex = userDB.jubs.length - 1 - index;
+                html += `
+                    <div class="jub-item">
+                        <div class="jub-item-text">
+                            <div class="kor">${j.kor}</div>
+                            <div class="eng">${j.eng}</div>
+                            ${j.ipa ? `<div style="font-size:12px; color:#868e96; margin-top:2px;">${j.ipa}</div>` : ''}
+                            <div style="font-size:11px; color:#adb5bd; margin-top:6px;">
+                                <b>${j.section || ('CH ' + j.ch)}</b> · ${j.originalEng !== j.eng ? '✏️ 내 맛대로 변형됨' : '🧺 원본 줍줍'}
+                            </div>
+                        </div>
+                        <button class="btn-remove-jub" onclick="removeJubFromList(${actualIndex})"><i class="fas fa-trash-can"></i></button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function removeJubFromList(index) {
+            if(confirm("정말 이 문장을 장바구니에서 삭제할까요?")) {
+                userDB.jubs.splice(index, 1);
+                saveDB();
+                renderBasket();
+            }
+        }
+
+        // =========================================================================
+        // 📚 툭탁 모드 및 오디오 연동
+        // =========================================================================
+        let currentDeck = [];
+        let currentCardIndex = 0;
+        let currentTaskId = "";
+        let currentChStr = "";
+        let isAnswerRevealed = false;
+        let audioTimer = null;
+
+        function startTuktak(chStr, dayLabel) {
+            if (typeof studyData === 'undefined') {
+                alert("⚠️ data.js 파일을 불러오지 못했습니다!
+index.html 파일과 같은 폴더 안에 data.js 파일이 있는지 확인해 주세요.");
+                return;
+            }
+
+            currentChStr = chStr;
+            currentTaskId = `CH${chStr}-${dayLabel}`;
+            currentDeck = [];
+
+            const chData = studyData[chStr];
+
+            // Day 0, Day +2 : 본문 전체 로드
+            if (dayLabel === "Day 0" || dayLabel === "Day +2") {
+                if (!chData) return alert(`data.js 파일에 "${chStr}" 챕터 데이터가 없습니다.`);
+                if (chData.mystory && chData.mystory.sentences) currentDeck.push(...extractFromDataJS(chData.mystory.sentences, `MS ${chStr}`, chData.mystory.audio));
+                if (chData.realconvo && chData.realconvo.chat) currentDeck.push(...extractFromDataJS(chData.realconvo.chat, `RC ${chStr}`, chData.realconvo.audio));
+            } 
+            // Day +1 : UE 표현 전체 로드
+            else if (dayLabel === "Day +1") {
+                if (!chData) return alert(`data.js 파일에 "${chStr}" 챕터 데이터가 없습니다.`);
+                if (chData.useful_mystory && chData.useful_mystory.sentences) currentDeck.push(...extractFromDataJS(chData.useful_mystory.sentences, `MS UE ${chStr}`, chData.useful_mystory.audio));
+                if (chData.useful_realconvo && chData.useful_realconvo.sentences) currentDeck.push(...extractFromDataJS(chData.useful_realconvo.sentences, `RC UE ${chStr}`, chData.useful_realconvo.audio));
+            }
+            // Day +3, Day +5 : 오직 내 계정에 저장된 장바구니 문장들만
+            else if (dayLabel === "Day +3" || dayLabel === "Day +5") {
+                const myJubs = userDB.jubs.filter(j => j.ch === chStr);
+                if (myJubs.length === 0) {
+                    alert(`🧺 [CH ${chStr}] 장바구니에 담아둔 문장이 없습니다!
+Day 0 또는 Day +1 학습에서 문장을 먼저 담거나 변형해주세요.`);
+                    return;
+                }
+                currentDeck = myJubs.map(j => ({
+                    kor: j.kor,
+                    eng: j.eng,
+                    ipa: j.ipa || "",
+                    audio: j.audio || "",
+                    start: j.start || 0,
+                    end: j.end || 0,
+                    originalEng: j.originalEng,
+                    badge: j.section || `줍줍 ${chStr}`
+                }));
+            }
+
+            if (currentDeck.length === 0) return alert("학습할 문장 데이터가 없습니다.");
+
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-tuktak').classList.add('active');
+            document.body.classList.add('tuktak-mode');
+            
+            currentCardIndex = 0;
+            showCard();
+        }
+
+        function extractFromDataJS(items, badgeTitle, audioPath) {
+            let cards = [];
+            items.forEach(item => {
+                if (item.type === "note") return;
+                let engText = "";
+                if (item.chunks && Array.isArray(item.chunks)) {
+                    engText = item.chunks.map(c => c.text).join(" ");
+                } else if (item.text) {
+                    engText = item.text;
+                }
+                if (item.trans && engText) {
+                    cards.push({
+                        kor: item.trans,
+                        eng: engText,
+                        ipa: item.ipa || "",
+                        audio: audioPath || "",
+                        start: item.start || 0,
+                        end: item.end || 0,
+                        originalEng: engText,
+                        badge: badgeTitle
+                    });
+                }
+            });
+            return cards;
+        }
+
+        function showCard() {
+            stopNativeAudio();
+
+            if (currentCardIndex >= currentDeck.length) {
+                finishTuktak();
+                return;
+            }
+
+            const card = currentDeck[currentCardIndex];
+            
+            // 장바구니에 덮어쓰기 된 변형이 있는지 확인
+            const savedJub = userDB.jubs.find(j => j.ch === currentChStr && j.originalEng === card.originalEng);
+            const displayKor = savedJub ? savedJub.kor : card.kor;
+            const displayEng = savedJub ? savedJub.eng : card.eng;
+            const displayIpa = card.ipa || "";
+
+            document.getElementById('tuktak-badge').innerText = card.badge;
+            document.getElementById('tuktak-counter').innerText = `${currentCardIndex + 1} / ${currentDeck.length}`;
+            
+            document.getElementById('tuktak-kor').innerText = displayKor;
+            document.getElementById('tuktak-eng').innerText = displayEng;
+            
+            const ipaEl = document.getElementById('tuktak-ipa');
+            if (displayIpa) {
+                ipaEl.innerText = displayIpa;
+                ipaEl.style.display = 'inline-block';
+            } else {
+                ipaEl.style.display = 'none';
+            }
+            
+            isAnswerRevealed = false;
+            document.getElementById('eng-half').classList.remove('revealed');
+            
+            const nextBtn = document.getElementById('btn-next');
+            nextBtn.innerHTML = `정답 확인 <i class="fas fa-chevron-right"></i>`;
+
+            updateJubButtonState();
+        }
+
+        // 🎧 원어민 오디오 정밀 재생
+        function stopNativeAudio() {
+            const player = document.getElementById('native-audio-player');
+            if (audioTimer) {
+                clearTimeout(audioTimer);
+                audioTimer = null;
+            }
+            if (player) {
+                player.pause();
+            }
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        function playFallbackTTS(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = 'en-US';
+                utter.rate = 0.95;
+                window.speechSynthesis.speak(utter);
+            }
+        }
+
+        function playNativeAudio() {
+            stopNativeAudio();
+            const card = currentDeck[currentCardIndex];
+            if (!card) return;
+
+            const currentEngText = document.getElementById('tuktak-eng').innerText || card.eng;
+
+            // 변형된 문장이라면 원어민 wav가 안 맞으므로 TTS로 읽기
+            if (currentEngText !== card.originalEng) {
+                playFallbackTTS(currentEngText);
+                return;
+            }
+
+            // 원본 문장이면 wav 파일 정밀 재생 시도
+            if (card.audio && card.end > card.start) {
+                const player = document.getElementById('native-audio-player');
+                if (!player.src.endsWith(encodeURI(card.audio))) {
+                    player.src = card.audio;
+                }
+                player.currentTime = card.start;
+                const durationMs = (card.end - card.start) * 1000;
+
+                const playPromise = player.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        audioTimer = setTimeout(() => {
+                            player.pause();
+                        }, durationMs);
+                    }).catch(() => {
+                        // 오디오 파일을 못 찾으면 TTS 폴백
+                        playFallbackTTS(currentEngText);
+                    });
+                }
+            } else {
+                playFallbackTTS(currentEngText);
+            }
+        }
+
+        function revealAnswer() {
+            if (isAnswerRevealed) return;
+            isAnswerRevealed = true;
+            document.getElementById('eng-half').classList.add('revealed');
+            const nextBtn = document.getElementById('btn-next');
+            nextBtn.innerHTML = `다음 문장 <i class="fas fa-chevron-right"></i>`;
+        }
+
+        function handleNextButton() {
+            if (!isAnswerRevealed) {
+                revealAnswer();
+            } else {
+                currentCardIndex++;
+                showCard();
+            }
+        }
+
+        function finishTuktak() {
+            alert("🎉 학습을 완료했습니다! 진도 트래커에 'O' 표시로 기록됩니다.");
+            userDB.completedTasks[currentTaskId] = true;
+            saveDB();
+            exitTuktak();
+        }
+
+        function exitTuktak() {
+            switchView('tracker');
+        }
+
+        // =========================================================================
+        // 🧺 장바구니 토글 & ✏️ 문장 변형 (Firestore 연동 포함)
+        // =========================================================================
+        function isCurrentCardInJub() {
+            const card = currentDeck[currentCardIndex];
+            // 덮어쓰기 된 원본이 있는지 확인
+            return userDB.jubs.some(j => j.ch === currentChStr && j.originalEng === card.originalEng);
+        }
+
+        function updateJubButtonState() {
+            const btn = document.getElementById('btn-jub');
+            const statusText = document.getElementById('jub-status-text');
+            if (isCurrentCardInJub()) {
+                btn.classList.add('active');
+                statusText.innerText = "담김 ✓";
+            } else {
+                btn.classList.remove('active');
+                statusText.innerText = "줍줍";
+            }
+        }
+
+        function toggleCurrentJub() {
+            const card = currentDeck[currentCardIndex];
+            const existingIndex = userDB.jubs.findIndex(j => j.ch === currentChStr && j.originalEng === card.originalEng);
+            
+            if (existingIndex >= 0) {
+                // 이미 담겨있으면 삭제
+                userDB.jubs.splice(existingIndex, 1);
+            } else {
+                // 없으면 그대로 원본 줍줍
+                userDB.jubs.push({
+                    id: Date.now().toString(),
+                    ch: currentChStr,
+                    section: card.badge,
+                    kor: document.getElementById('tuktak-kor').innerText,
+                    eng: document.getElementById('tuktak-eng').innerText,
+                    ipa: card.ipa || "",
+                    audio: card.audio || "",
+                    start: card.start || 0,
+                    end: card.end || 0,
+                    originalEng: card.originalEng
+                });
+            }
+            saveDB();
+            updateJubButtonState();
+        }
+
+        function openEditModal() {
+            document.getElementById('edit-kor').value = document.getElementById('tuktak-kor').innerText;
+            document.getElementById('edit-eng').value = document.getElementById('tuktak-eng').innerText;
+            document.getElementById('edit-modal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('active');
+        }
+
+        // isOverwrite : true = 기존 카드 덮어쓰기 / false = 새 카드로 장바구니 추가
+        function saveEditedJub(isOverwrite) {
+            const newKor = document.getElementById('edit-kor').value.trim();
+            const newEng = document.getElementById('edit-eng').value.trim();
+            if (!newKor || !newEng) {
+                alert("한글과 영어를 모두 입력해주세요.");
+                return;
+            }
+
+            const card = currentDeck[currentCardIndex];
+
+            if (isOverwrite) {
+                // 1. 현재 카드 덮어쓰기 (기존에 줍줍한 게 있다면 교체, 없으면 새로 저장하되 원본 키 매칭)
+                const existingIndex = userDB.jubs.findIndex(j => j.ch === currentChStr && j.originalEng === card.originalEng);
+                if (existingIndex >= 0) {
+                    userDB.jubs[existingIndex].kor = newKor;
+                    userDB.jubs[existingIndex].eng = newEng;
+                } else {
+                    userDB.jubs.push({
+                        id: Date.now().toString(),
+                        ch: currentChStr,
+                        section: card.badge,
+                        kor: newKor,
+                        eng: newEng,
+                        ipa: card.ipa || "",
+                        audio: card.audio || "",
+                        start: card.start || 0,
+                        end: card.end || 0,
+                        originalEng: card.originalEng
+                    });
+                }
+                
+                // 화면에 즉시 텍스트 변경
+                document.getElementById('tuktak-kor').innerText = newKor;
+                document.getElementById('tuktak-eng').innerText = newEng;
+
+            } else {
+                // 2. 새 카드로 추가 (originalEng를 변형된 영문으로 아예 분리시켜 별개의 카드로 취급)
+                userDB.jubs.push({
+                    id: Date.now().toString(),
+                    ch: currentChStr,
+                    section: card.badge + " (추가 변형)",
+                    kor: newKor,
+                    eng: newEng,
+                    ipa: "", // 변형되었으므로 IPA는 지움
+                    audio: "",
+                    start: 0,
+                    end: 0,
+                    originalEng: newEng // 원본 연결 고리를 끊음
+                });
+                alert("장바구니에 새로운 카드로 추가되었습니다!");
+            }
+
+            saveDB();
+            closeEditModal();
+            updateJubButtonState();
+        }
+
+    </script>
+</body>
+</html>
