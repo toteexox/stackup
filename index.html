@@ -252,12 +252,22 @@
         
         <!-- 1. 트래커 뷰 -->
         <div id="view-tracker" class="view-section active">
-            <div class="section-header"><h2>🔥 오늘의 미션</h2><span class="sub-text">(클릭 시 학습 진입)</span></div>
+            <div class="section-header"><h2>🔥 오늘의 미션</h2></div>
             <div id="todo-list-container" class="todo-list"></div>
-            <div class="section-header"><h2>📊 12 챕터 누적 스케줄 조망</h2><span class="sub-text">(O/X 표시 · 클릭해 재학습)</span></div>
+            <div class="section-header" style="justify-content: space-between;">
+                <div style="display:flex; align-items:baseline; gap:8px;">
+                    <h2>📊 StackUp Tracker</h2><span class="sub-text">(5회 누적)</span>
+                </div>
+                <button onclick="openCalendarModal()" style="background:#eef4ff; border:1px solid #4dabf7; color:#1d4ed8; padding:6px 12px; border-radius:8px; font-weight:800; cursor:pointer; font-size:13px;">
+                    <i class="far fa-calendar-alt"></i> 스케줄 보기
+                </button>
+            </div>
             <div class="schedule-info-box">
-                <div class="schedule-info-line">💡 Day 0, +1, +2는 기본 제공 문장으로 훈련합니다.</div>
-                <div class="schedule-info-line">💡 Day +3, +5는 장바구니(🧺)에 담은 문장만 복습합니다!</div>
+                <div class="schedule-info-line">💡 1일차는 MS/RC 문장을 학습합니다.</div>
+                <div class="schedule-info-line">💡 2일차는 UE을 변형 및 줍줍하여 학습합니다.</div>
+                <div class="schedule-info-line">💡 3일차는 MS/RC 문장을 보지않고도 달달 나오는지 확인합니다.</div>
+                <div class="schedule-info-line">💡 4일차는 UE의 변형/줍줍 문장이 달달 나오는지 확인합니다.</div>
+                <div class="schedule-info-line">💡 5일차는 5일차는 MS/RC본문과 줍줍문장 모두 달달 나오는지 확인합니다.</div>
             </div>
             <div id="tracker-grid"></div>
         </div>
@@ -266,7 +276,7 @@
         <div id="view-learn" class="view-section">
             <div class="section-header"><h2>📚 챕터별 전체 학습</h2></div>
             <div class="schedule-info-box" style="margin-bottom: 16px;">
-                <div class="schedule-info-line">💡 표시된 숫자를 눌러 해당 문장들만 모아 <b>버닝모드</b>로 연습하세요!</div>
+                <div class="schedule-info-line">💡 표시된 숫자를 눌러 <b>해당챕터의 문장들</b>을 확인하세요!</div>
             </div>
             <div class="stats-table-wrapper">
                 <table class="stats-table">
@@ -299,8 +309,8 @@
         <div id="view-basket" class="view-section">
             <div class="section-header"><h2>🧺 나의 줍줍 & 변형 문장</h2></div>
             <div class="schedule-info-box" style="margin-bottom: 16px;">
-                <div class="schedule-info-line">💡 툭탁 연습 중 🧺 버튼으로 담았거나 변형한 문장들입니다.</div>
-                <div class="schedule-info-line">💡 숫자를 클릭해 내가 담은 문장만 버닝모드로 복습하세요!</div>
+                <div class="schedule-info-line">💡 나만의 줍줍(🧺) 문장들입니다.</div>
+                <div class="schedule-info-line">💡 숫자를 클릭해 내가 담은 문장을 확인하세요!</div>
             </div>
             <div class="stats-table-wrapper">
                 <table class="stats-table">
@@ -401,6 +411,22 @@
             </div>
         </div>
     </div>
+
+
+    <!-- 📆 스케줄 달력 모달 -->
+    <div class="modal-overlay" id="calendar-modal">
+        <div class="edit-modal" style="max-width: 95%; width: 800px; max-height: 90vh; overflow-y: auto; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin:0; font-size:18px; color:#1e293b;">📆 전체 스터디 스케줄</h3>
+                <button onclick="closeCalendarModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color:#868e96;"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="calendar-content"></div>
+        </div>
+    </div>
+
+
+
+
 
     <audio id="native-audio-player"></audio>
     <script src="data.js"></script>
@@ -514,13 +540,13 @@
             return count;
         }
 
-        const taskOffsets = { "Day 0": 0, "Day +1": 1, "Day +2": 2, "Day +3": 3, "Day +5": 5 };
+        const taskOffsets = { "1일차": 0, "2일차": 1, "3일차": 2, "4일차": 3, "5일차": 5 };
         const taskLabels = {
-            "Day 0": { icon: "📖", name: "진도", desc: "본문(MS/RC) 흐름 파악", type: "story" },
-            "Day +1": { icon: "✍️", name: "확장", desc: "UE 표현 줍줍&변형", type: "pattern" },
-            "Day +2": { icon: "🎭", name: "스토리", desc: "본문 달달 복습(MS/RC)", type: "story" },
-            "Day +3": { icon: "🔄", name: "반복", desc: "줍줍&변형 달달 복습", type: "pattern" },
-            "Day +5": { icon: "✨", name: "새김", desc: "나만의 엑기스 최종 복습", type: "pattern" }
+            "1일차": { icon: "📖", name: "진도", desc: "본문(MS/RC) 흐름 파악", type: "story" },
+            "2일차": { icon: "✍️", name: "확장", desc: "UE 표현 줍줍&변형", type: "pattern" },
+            "3일차": { icon: "🎭", name: "스토리", desc: "본문 달달 복습(MS/RC)", type: "story" },
+            "4일차": { icon: "🔄", name: "반복", desc: "줍줍&변형 달달 복습", type: "pattern" },
+            "5일차": { icon: "✨", name: "새김", desc: "본문+줍줍 최종 복습", type: "pattern" }
         };
 
         function getChapterSchedule() {
@@ -548,6 +574,10 @@
             document.getElementById('learn-list-container').style.display = 'none';
             document.getElementById('basket-list-container').style.display = 'none';
             
+            // 💡 [추가] 탭 전환 시 표와 안내문구를 다시 보이도록 초기화
+            document.querySelectorAll('.stats-table-wrapper').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('.schedule-info-box').forEach(el => el.style.display = 'flex');
+            
             if(viewName === 'tracker') {
                 document.querySelectorAll('.nav-tab')[0].classList.add('active');
                 document.getElementById('view-tracker').classList.add('active');
@@ -562,6 +592,8 @@
                 renderBasketTable();
             }
         }
+
+
 
         // 공통 데이터 추출
         function extractCards(items, badgeTitle, audioPath, chStr) {
@@ -607,12 +639,13 @@
                     let uiInfo = taskLabels[dayLabel];
                     let cell = document.createElement('div'); cell.className = `task-cell ${uiInfo.type}-day`;
                     
-                    let isCompleted = userDB.completedTasks[taskId] === true;
+                    let completedVal = userDB.completedTasks[taskId];
+                    let isCompleted = completedVal !== undefined && completedVal !== false;
                     let isToday = (!isWeekend && reqDays === currentStudyDays);
                     let isMissed = (reqDays < currentStudyDays) && !isCompleted;
 
                     cell.innerHTML = `<span class="task-icon">${uiInfo.icon}</span><span>${uiInfo.name}</span>`;
-                    if (isToday) todayTasks.push({ chStr, dayLabel, uiInfo, isCompleted });
+                    if (isToday) todayTasks.push({ chStr, dayLabel, uiInfo, isCompleted, completedVal });
 
                     if (isCompleted) cell.classList.add('completed');
                     else if (isToday) cell.classList.add('active-today');
@@ -631,12 +664,29 @@
                 todayTasks.forEach(item => {
                     const cardEl = document.createElement('div'); cardEl.className = `mission-card ${item.isCompleted ? 'completed':''}`;
                     cardEl.onclick = () => startTuktakDaily(item.chStr, item.dayLabel);
+                    
+                    // 💡 완료 시간 표시 로직 추가
+                    let completedAtHtml = '';
+                    if (item.isCompleted) {
+                        if (typeof item.completedVal === 'string') {
+                            let d = new Date(item.completedVal);
+                            let m = d.getMonth() + 1; let day = d.getDate();
+                            let h = d.getHours(); let min = d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes();
+                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ ${m}월 ${day}일 ${h}:${min} 학습 완료</div>`;
+                        } else {
+                            // 시간 저장 기능 도입 전에 완료했던 항목들 처리용
+                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ 완료됨</div>`;
+                        }
+                    }
+
                     cardEl.innerHTML = `
                         <div class="mission-left">
                             <div class="mission-top-row"><span class="day-pill">${item.dayLabel}</span><span class="mission-desc-green">${item.uiInfo.desc}</span></div>
                             <div class="mission-main-title">Chapter ${item.chStr} - ${item.uiInfo.name}</div>
+                            ${completedAtHtml}
                         </div>
-                        <div class="play-circle-btn" style="${item.isCompleted ? 'background:#ebfbee; border-color:#8ce99a; color:#2b8a3e; font-size:20px;':''}">${item.isCompleted ? 'O' : '<i class="fas fa-play" style="margin-left:2px;"></i>'}</div>`;
+                        <!-- 💡 'O' 대신 체크 아이콘으로 변경 -->
+                        <div class="play-circle-btn" style="${item.isCompleted ? 'background:#ebfbee; border-color:#8ce99a; color:#2b8a3e; font-size:20px;':''}">${item.isCompleted ? '<i class="fas fa-check"></i>' : '<i class="fas fa-play" style="margin-left:2px;"></i>'}</div>`;
                     todoContainer.appendChild(cardEl);
                 });
             }
@@ -785,11 +835,24 @@
         function showList(type, title, listIdx) {
             currentListType = type; currentListIdx = listIdx;
             const container = document.getElementById(type + '-list-container');
+            
+            // 💡 [추가] 리스트가 나타날 때, 해당 탭의 표(Table)와 안내문구를 숨김 처리
             document.getElementById('learn-list-container').style.display = 'none';
             document.getElementById('basket-list-container').style.display = 'none';
+            document.querySelectorAll(`#view-${type} .stats-table-wrapper`).forEach(el => el.style.display = 'none');
+            document.querySelectorAll(`#view-${type} .schedule-info-box`).forEach(el => el.style.display = 'none');
             
             container.style.display = 'block';
-            document.getElementById(type + '-list-title').innerText = `${title} (${globalTempLists[listIdx].length})`;
+            
+            // 💡 [수정] 제목 영역에 뒤로 가기(←) 아이콘 추가
+            document.getElementById(type + '-list-title').innerHTML = `
+                <span style="display:flex; align-items:center; gap:10px;">
+                    <button onclick="hideList('${type}')" style="background:none; border:none; font-size:22px; color:#495057; cursor:pointer; padding:0; display:flex; align-items:center;">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    ${title} (${globalTempLists[listIdx].length})
+                </span>
+            `;
             
             isListEngFirst = false; // 기본 한->영
             document.querySelectorAll('.lang-toggle-wrapper').forEach(w => {
@@ -799,8 +862,26 @@
             });
             stopNativeAudio();
             renderListItems();
-            setTimeout(() => { container.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 100);
+            
+            // 리스트가 열리면 자연스럽게 화면 최상단으로 스크롤 이동
+            window.scrollTo({top: 0, behavior: 'smooth'}); 
         }
+
+
+
+        // 💡 [새로 추가된 함수] 리스트에서 '뒤로 가기' 버튼을 눌렀을 때 실행
+        function hideList(type) {
+            stopNativeAudio(); // 혹시 재생 중인 음성이 있다면 정지
+            
+            // 리스트 영역 숨기기
+            document.getElementById(type + '-list-container').style.display = 'none';
+            
+            // 숨겨뒀던 표(Table)와 안내문구 다시 표시하기
+            document.querySelectorAll(`#view-${type} .stats-table-wrapper`).forEach(el => el.style.display = 'block');
+            document.querySelectorAll(`#view-${type} .schedule-info-box`).forEach(el => el.style.display = 'flex');
+        }
+
+
 
         function toggleListLang() { 
             isListEngFirst = !isListEngFirst; 
@@ -825,7 +906,13 @@
 
             list.forEach((card, index) => {
                 let item = document.createElement('div'); item.className = 'jub-item';
-                let html = '<div class="jub-item-text">';
+                
+                // 💡 [추가] 리스트 항목에 마우스 포인터 적용 및 클릭 시 개별 재생 이벤트 연결
+                item.style.cursor = 'pointer';
+                item.onclick = (e) => playSingleListCard(index, e);
+
+                // 휴지통 버튼과 겹치지 않게 텍스트 영역에 flex:1 부여
+                let html = '<div class="jub-item-text" style="flex:1;">';
                 
                 if(isListEngFirst) {
                     html += `<div class="eng text-green">${card.eng}</div>`;
@@ -840,16 +927,84 @@
                 html += `<div style="font-size:11px; color:#adb5bd; margin-top:8px;"><b>${card.badge}</b></div></div>`;
                 
                 if(currentListType === 'basket' && card.jubId) {
-                    html += `<button class="btn-remove-jub" onclick="removeJubById('${card.jubId}')"><i class="fas fa-trash-can"></i></button>`;
+                    // 💡 [수정] 휴지통 삭제 시 듣기 이벤트가 발생하지 않도록 event 객체 전달
+                    html += `<button class="btn-remove-jub" onclick="removeJubById('${card.jubId}', event)"><i class="fas fa-trash-can"></i></button>`;
                 }
                 item.innerHTML = html; wrapper.appendChild(item);
             });
         }
 
-        function removeJubById(id) {
+
+        function removeJubById(id, e) {
+            // 💡 [추가] 휴지통 클릭 시 카드(문장) 전체 클릭 이벤트가 실행되는 것을 차단
+            if(e) e.stopPropagation();
+            
             if(confirm("이 문장을 삭제할까요?")) {
                 let idx = userDB.jubs.findIndex(j => j.id === id);
-                if(idx > -1) { userDB.jubs.splice(idx, 1); saveDB(); renderBasketTable(); document.getElementById('basket-list-container').style.display = 'none'; }
+                if(idx > -1) { 
+                    userDB.jubs.splice(idx, 1); 
+                    saveDB(); 
+                    renderBasketTable(); 
+                    hideList('basket'); // 삭제 후 표 화면으로 복귀
+                }
+            }
+        }
+
+
+        // 💡 [새로 추가된 기능] 리스트 개별 항목 클릭 시 해당 문장만 재생
+        // 💡 [수정된 기능] 리스트 개별 항목 클릭 시 재생 (변형 문장 TTS 차단)
+        function playSingleListCard(index, e) {
+            if (e) e.stopPropagation();
+            stopNativeAudio(); // 기존 재생 중인 음성 끄기
+            
+            // 만약 '전체듣기'가 실행 중이었다면 해제하고 버튼 UI 원복
+            const btn = document.getElementById('btn-play-learn');
+            if (isPlayingAll && btn) {
+                isPlayingAll = false;
+                btn.innerText = "🎧 전체듣기"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057";
+            }
+
+            const card = globalTempLists[currentListIdx][index];
+            if (!card) return;
+
+            // 시각적 피드백: 현재 클릭한 리스트 항목에 파란색 테두리 하이라이트
+            const listWrapper = document.getElementById(currentListType + '-list-wrapper');
+            const items = listWrapper.children;
+            Array.from(items).forEach(el => { el.style.border = "1px solid #e9ecef"; el.style.boxShadow = "none"; });
+            if (items[index]) {
+                items[index].style.border = "2px solid #4dabf7";
+                items[index].style.boxShadow = "0 4px 12px rgba(77,171,247,0.2)";
+            }
+
+            // 💡 [핵심 추가] 줍줍 리스트이면서 사용자가 수정한 '변형 문장'인지 확인
+            const isModified = (card.originalEng && card.originalEng !== card.eng);
+
+            // 개별 음성 재생 로직
+            if (card.audio && card.end > card.start) {
+                const player = document.getElementById('native-audio-player');
+                if (!player.src.endsWith(encodeURI(card.audio))) player.src = card.audio;
+                
+                player.playbackRate = currentAudioSpeed;
+                player.currentTime = card.start;
+                const durationMs = ((card.end - card.start) * 1000) / currentAudioSpeed;
+                
+                const playPromise = player.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => { 
+                        audioTimer = setTimeout(() => { player.pause(); }, durationMs); 
+                    }).catch(() => { 
+                        // 에러 시 변형 문장이 아닐 때만 TTS 실행
+                        if (!(currentListType === 'basket' && isModified)) {
+                            playFallbackTTS(card.eng); 
+                        }
+                    });
+                }
+            } else { 
+                // 💡 오디오가 없는 경우(변형 문장 등): 줍줍 탭의 변형 문장이면 아무 소리도 내지 않고 종료
+                if (currentListType === 'basket' && isModified) {
+                    return; 
+                }
+                playFallbackTTS(card.eng); 
             }
         }
 
@@ -933,18 +1088,29 @@
             if (typeof studyData === 'undefined') return alert("⚠️ data.js 파일이 없습니다!");
             const chData = studyData[chStr]; let deck = [];
 
-            if (dayLabel === "Day 0" || dayLabel === "Day +2") {
-                if (!chData) return;
-                if (chData.mystory) deck.push(...extractCards(chData.mystory.sentences, `MS ${chStr}`, chData.mystory.audio, chStr));
-                if (chData.realconvo) deck.push(...extractCards(chData.realconvo.chat, `RC ${chStr}`, chData.realconvo.audio, chStr));
-            } else if (dayLabel === "Day +1") {
-                if (!chData) return;
-                if (chData.useful_mystory) deck.push(...extractCards(chData.useful_mystory.sentences, `MS UE ${chStr}`, chData.useful_mystory.audio, chStr));
-                if (chData.useful_realconvo) deck.push(...extractCards(chData.useful_realconvo.sentences, `RC UE ${chStr}`, chData.useful_realconvo.audio, chStr));
-            } else if (dayLabel === "Day +3" || dayLabel === "Day +5") {
+            // 1일차, 3일차, 5일차: 본문(MS/RC) 추가
+            if (dayLabel === "1일차" || dayLabel === "3일차" || dayLabel === "5일차") {
+                if (chData) {
+                    if (chData.mystory) deck.push(...extractCards(chData.mystory.sentences, `MS ${chStr}`, chData.mystory.audio, chStr));
+                    if (chData.realconvo) deck.push(...extractCards(chData.realconvo.chat, `RC ${chStr}`, chData.realconvo.audio, chStr));
+                }
+            } 
+            
+            // 2일차: 확장(UE) 추가
+            if (dayLabel === "2일차") {
+                if (chData) {
+                    if (chData.useful_mystory) deck.push(...extractCards(chData.useful_mystory.sentences, `MS UE ${chStr}`, chData.useful_mystory.audio, chStr));
+                    if (chData.useful_realconvo) deck.push(...extractCards(chData.useful_realconvo.sentences, `RC UE ${chStr}`, chData.useful_realconvo.audio, chStr));
+                }
+            } 
+            
+            // 4일차, 5일차: 장바구니(줍줍) 추가
+            if (dayLabel === "4일차" || dayLabel === "5일차") {
                 const myJubs = userDB.jubs.filter(j => j.ch === chStr);
-                if (myJubs.length === 0) return alert(`장바구니에 담아둔 문장이 없습니다!`);
-                deck = myJubs.map(j => ({ kor: j.kor, eng: j.eng, chunks: [], ipa: j.ipa || "", audio: j.audio || "", start: j.start || 0, end: j.end || 0, originalEng: j.originalEng, badge: j.section, ch: chStr }));
+                // 4일차는 장바구니만 하므로 비어있으면 경고, 5일차는 본문이 있으므로 그냥 넘깁니다.
+                if (dayLabel === "4일차" && myJubs.length === 0) return alert(`장바구니에 담아둔 문장이 없습니다!`);
+                const jubCards = myJubs.map(j => ({ kor: j.kor, eng: j.eng, chunks: [], ipa: j.ipa || "", audio: j.audio || "", start: j.start || 0, end: j.end || 0, originalEng: j.originalEng, badge: j.section, ch: chStr }));
+                deck.push(...jubCards);
             }
 
             if (deck.length === 0) return alert("학습할 카드가 없습니다.");
@@ -952,6 +1118,8 @@
             currentTaskId = `CH${chStr}-${dayLabel}`; currentChStr = chStr; currentDeck = deck;
             launchTuktakView();
         }
+
+
 
         function startBurningMode() {
             const list = globalTempLists[currentListIdx];
@@ -971,18 +1139,22 @@
 
         function showCard() {
             stopNativeAudio();
+            
+            // 1. 학습할 카드가 더 이상 없으면 완료 처리
             if (currentCardIndex >= currentDeck.length) { finishTuktak(); return; }
 
             const card = currentDeck[currentCardIndex];
-            const savedJub = userDB.jubs.find(j => j.ch === card.ch && j.originalEng === card.originalEng);
-            const displayKor = savedJub ? savedJub.kor : card.kor;
-            const displayEng = savedJub ? savedJub.eng : card.eng;
+            
+            // 2. 덮어쓰기 방지: 현재 진도 모드(Day 0 등)에 맞는 데이터를 그대로 사용
+            const displayKor = card.kor;
+            const displayEng = card.eng;
 
+            // 3. 카드 상단 뱃지 및 카운터 업데이트
             document.getElementById('tuktak-badge').innerText = card.badge;
             document.getElementById('tuktak-counter').innerText = `${currentCardIndex + 1} / ${currentDeck.length}`;
             document.getElementById('tuktak-kor').innerText = displayKor;
             
-            // 영어 청크 렌더링
+            // 4. 영어 문장 및 청크(끊어읽기) 렌더링
             const engContainer = document.getElementById('tuktak-eng');
             engContainer.innerHTML = '';
             
@@ -992,27 +1164,36 @@
                     span.onclick = (e) => playChunk(idx, e);
                     engContainer.appendChild(span);
                 });
-            } else { engContainer.innerText = displayEng; }
+            } else { 
+                engContainer.innerText = displayEng; 
+            }
             
+            // 5. 발음 기호(IPA) 표시 여부
             const ipaEl = document.getElementById('tuktak-ipa');
-            if (card.ipa) { ipaEl.innerText = card.ipa; ipaEl.style.display = 'inline-block'; } else { ipaEl.style.display = 'none'; }
+            if (card.ipa) { 
+                ipaEl.innerText = card.ipa; 
+                ipaEl.style.display = 'inline-block'; 
+            } else { 
+                ipaEl.style.display = 'none'; 
+            }
             
+            // 6. 카드 정답 가리기 및 하단 버튼 상태 초기화
             isAnswerRevealed = false;
             document.getElementById('eng-half').classList.remove('revealed');
-            
             document.getElementById('action-reveal').style.display = 'flex';
             document.getElementById('action-eval').style.display = 'none';
 
-            // 💡 [추가된 부분] 변형된 문장이거나 오디오 파일이 없으면 버튼 그룹 숨기기!
+            // 7. 💡 [추가됨] 변형된 문장이거나 오디오 파일이 없으면 원어민 음성(배속) 버튼 숨기기!
             const audioControls = document.getElementById('audio-controls');
-            if (displayEng !== card.originalEng || !card.audio) {
-                audioControls.style.display = 'none';
-            } else {
-                audioControls.style.display = 'flex';
+            if (audioControls) {
+                if (displayEng !== card.originalEng || !card.audio) {
+                    audioControls.style.display = 'none'; // 숨김
+                } else {
+                    audioControls.style.display = 'flex'; // 보임
+                }
             }
-
-            updateJubButtonState();
         }
+
 
         function revealAnswer(e) {
             if (isAnswerRevealed) return;
@@ -1034,8 +1215,10 @@
 
         function finishTuktak() {
             if (currentTaskId) {
-                alert("🎉 일일 미션을 완료했습니다! 진도 트래커에 'O' 표시로 기록됩니다.");
-                userDB.completedTasks[currentTaskId] = true; saveDB();
+                alert("🎉 일일 미션을 완료했습니다! 트래커에 'O' 표시로 기록됩니다.");
+                // 💡 단순 완료(true)가 아니라 현재 완료 시간을 저장합니다.
+                userDB.completedTasks[currentTaskId] = new Date().toISOString(); 
+                saveDB();
             } else { alert("🔥 버닝 모드 학습을 완료했습니다!"); }
             exitTuktak();
         }
@@ -1162,6 +1345,75 @@
             closeEditModal(); 
             updateJubButtonState();
         }
+
+
+
+
+        // =========================================================================
+        // 📆 달력 스케줄 생성기
+        // =========================================================================
+        function generateCalendar() {
+            let html = '<table style="width:100%; border-collapse:collapse; text-align:left; font-size:11px;">';
+            html += '<tr style="background:#f8f9fa; color:#495057;"><th style="padding:8px; border:1px solid #dee2e6; text-align:center;">월</th><th style="padding:8px; border:1px solid #dee2e6; text-align:center;">화</th><th style="padding:8px; border:1px solid #dee2e6; text-align:center;">수</th><th style="padding:8px; border:1px solid #dee2e6; text-align:center;">목</th><th style="padding:8px; border:1px solid #dee2e6; text-align:center;">금</th><th style="padding:8px; border:1px solid #dee2e6; color:#fa5252; text-align:center;">토</th><th style="padding:8px; border:1px solid #dee2e6; color:#fa5252; text-align:center;">일</th></tr>';
+
+            let scheduleMap = {};
+            for(let ch=1; ch<=12; ch++) {
+                let chStartOffset = (ch - 1) * 2;
+                let chTasks = {
+                    "진도": chStartOffset + 0,
+                    "확장": chStartOffset + 1,
+                    "스토리": chStartOffset + 2,
+                    "반복": chStartOffset + 3,
+                    "새김": chStartOffset + 5
+                };
+                for (const [taskName, offset] of Object.entries(chTasks)) {
+                    let date = new Date("2026-10-26T12:00:00");
+                    let addedDays = 0;
+                    while (addedDays < offset) {
+                        date.setDate(date.getDate() + 1);
+                        if (date.getDay() !== 0 && date.getDay() !== 6) addedDays++; // 주말 건너뛰기
+                    }
+                    let dateStr = `${date.getMonth()+1}/${date.getDate()}`;
+                    if (!scheduleMap[dateStr]) scheduleMap[dateStr] = [];
+                    scheduleMap[dateStr].push(`[${taskName}] CH ${ch}`);
+                }
+            }
+
+            let drawDate = new Date("2026-10-26T12:00:00");
+            for (let week=0; week<6; week++) { // 총 6주치 달력 생성
+                html += '<tr>';
+                for (let day=1; day<=7; day++) {
+                    let actualDay = day === 7 ? 0 : day;
+                    let dateStr = `${drawDate.getMonth()+1}/${drawDate.getDate()}`;
+                    let tasks = scheduleMap[dateStr] || [];
+                    
+                    let taskHtml = tasks.map(t => `<div style="margin-top:4px; font-weight:700; color:#1864ab; background:#e7f5ff; padding:4px 6px; border-radius:4px; font-size:11px;">${t}</div>`).join('');
+                    
+                    let bg = (actualDay === 0 || actualDay === 6) ? '#fbfbfc' : '#ffffff';
+                    let dateColor = (actualDay === 0 || actualDay === 6) ? '#fa5252' : '#495057';
+
+                    html += `<td style="border:1px solid #dee2e6; padding:6px; vertical-align:top; background:${bg}; height:85px; width:14%;">
+                        <div style="font-weight:800; color:${dateColor}; margin-bottom:4px; text-align:right;">${dateStr}</div>
+                        ${taskHtml}
+                    </td>`;
+                    drawDate.setDate(drawDate.getDate() + 1);
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            document.getElementById('calendar-content').innerHTML = html;
+        }
+
+        function openCalendarModal() {
+            document.getElementById('calendar-modal').classList.add('active');
+            generateCalendar();
+        }
+        
+        function closeCalendarModal() {
+            document.getElementById('calendar-modal').classList.remove('active');
+        }
+
+
 
 
     </script>
