@@ -1308,29 +1308,32 @@
             if (card.ipa) { ipaEl.innerText = card.ipa; ipaEl.style.display = 'inline-block'; } 
             else { ipaEl.style.display = 'none'; }
             
-            // 💡 [추가] 기존 학습 이력(성취도) 확인 로직
+            // 💡 기존 학습 이력(성취도) 확인
             const key = card.ch + "_" + card.originalEng;
             const prevStatus = userDB.cardStats[key];
             const statusBadge = document.getElementById('tuktak-status');
             
+            // 과거 성취도가 있으면 상단 뱃지는 항상 표시해 줌
             if (prevStatus) {
-                // 1) 이미 학습한 카드인 경우
                 statusBadge.style.display = 'block';
                 statusBadge.innerText = prevStatus;
                 if (prevStatus === '술술') { statusBadge.style.background = '#d3f9d8'; statusBadge.style.color = '#2b8a3e'; }
                 else if (prevStatus === '버벅') { statusBadge.style.background = '#fff3bf'; statusBadge.style.color = '#f59f00'; }
                 else { statusBadge.style.background = '#ffe3e3'; statusBadge.style.color = '#e03131'; }
-                
-                isAnswerRevealed = true;
-                document.getElementById('eng-half').classList.add('revealed'); // 영어 정답 즉시 노출
-                
-                document.getElementById('action-speak').style.display = 'none'; // 녹음 시작 버튼 숨김
-                document.getElementById('user-record-controls').style.display = 'flex'; // 재녹음 버튼 노출
-                document.getElementById('card-nav-buttons').style.display = 'flex'; // 화살표 노출
-                
             } else {
-                // 2) 처음 학습하는 카드인 경우
                 statusBadge.style.display = 'none';
+            }
+
+            // 💡 [핵심 변경] 일일 미션(currentTaskId 존재)이면서 기록이 있을 때만 정답 즉시 공개
+            // 버닝 모드(currentTaskId === null)일 때는 무조건 녹음부터 시작!
+            if (prevStatus && currentTaskId !== null) {
+                isAnswerRevealed = true;
+                document.getElementById('eng-half').classList.add('revealed'); 
+                
+                document.getElementById('action-speak').style.display = 'none'; 
+                document.getElementById('user-record-controls').style.display = 'flex'; 
+                document.getElementById('card-nav-buttons').style.display = 'flex'; 
+            } else {
                 isAnswerRevealed = false;
                 document.getElementById('eng-half').classList.remove('revealed');
                 
@@ -1339,7 +1342,7 @@
                 btnSpeak.style.background = '#5ba4ff';
                 btnSpeak.onclick = startRecording;
 
-                document.getElementById('action-speak').style.display = 'flex'; // 녹음 버튼 노출
+                document.getElementById('action-speak').style.display = 'flex'; 
                 document.getElementById('user-record-controls').style.display = 'none';
                 document.getElementById('card-nav-buttons').style.display = 'none';
             }
