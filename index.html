@@ -260,9 +260,11 @@
     <!-- 상단 시뮬레이터 -->
     <div class="date-simulator">
         <button onclick="changeDate(-1)">◀ 이전</button>
-        <button onclick="resetDate()" style="background:#2b8a3e; margin:0 4px;">오늘</button>
+        <!-- 💡 기준일을 가운데로 배치 -->
+        <span id="currentDateDisplay" style="margin: 0 10px; font-size: 14px; font-weight: 700;"></span>
         <button onclick="changeDate(1)">다음 ▶</button>
-        <span id="currentDateDisplay" style="margin-left: 10px;"></span>
+        <!-- 💡 오늘 날짜로 돌아오는 버튼은 우측 끝으로 살짝 분리 -->
+        <button onclick="resetDate()" style="background:#2b8a3e; margin-left: 8px;">오늘</button>
     </div>
 
     <div class="main-container">
@@ -646,7 +648,7 @@
         // =========================================================================
         let simulatedDate = new Date("2026-10-26T12:00:00");
         function updateDateDisplay() {
-            document.getElementById('currentDateDisplay').innerText = `📅 기준일: ${simulatedDate.toLocaleDateString('ko-KR', {month:'numeric',day:'numeric',weekday:'short'})}`;
+            document.getElementById('currentDateDisplay').innerText = `📅 ${simulatedDate.toLocaleDateString('ko-KR', {month:'numeric',day:'numeric',weekday:'short'})}`;
             if(document.getElementById('view-tracker').classList.contains('active')) renderTracker();
             if(document.getElementById('view-learn').classList.contains('active')) renderLearnTable();
             if(document.getElementById('view-basket').classList.contains('active')) renderBasketTable();
