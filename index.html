@@ -129,13 +129,22 @@
         .btn-burning { background: #ff6b6b; color: white; border: none; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3); transition: all 0.15s; height: 32px;}
         .btn-burning:active { transform: scale(0.95); }
         
-        .list-wrapper { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 4px; }
-        .jub-item { background: #f8f9fa; border-radius: 12px; padding: 14px; border: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+        /* 💡 [수정] 답답한 네모 박스를 없애고 시원한 밑줄 형태로 변경 */
+        .list-wrapper { display: flex; flex-direction: column; gap: 0; max-height: 500px; overflow-y: auto; padding-right: 4px; }
+        .jub-item { background: transparent; border-radius: 0; padding: 16px 8px; border: none; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s; }
+        .jub-item:last-child { border-bottom: none; }
+        .jub-item:active { background: #f8f9fa; }
         
         /* 리스트 텍스트 색상 */
         .text-green { color: #2b8a3e !important; font-weight: 800 !important; font-size: 16px !important; }
         .text-gray { color: #64748b !important; font-weight: 600 !important; font-size: 14px !important; }
-        
+
+        /* 리스트 우측 액션 아이콘 (ℹ️, ✏️, 🗑️) */
+        .item-actions { display: flex; align-items: center; gap: 4px; }
+        .btn-icon-action { background: none; border: none; color: #adb5bd; font-size: 17px; cursor: pointer; padding: 8px; transition: color 0.2s; }
+        .btn-icon-action.has-memo { color: #339af0; } /* 메모가 있으면 파란색으로 강조 */
+        .btn-remove-jub { background: none; border: none; color: #fa5252; font-size: 17px; cursor: pointer; padding: 8px; }
+
         .btn-remove-jub { background: none; border: none; color: #fa5252; font-size: 18px; cursor: pointer; padding: 8px;}
 
         /* 툭탁 뷰 헤더 */
@@ -360,9 +369,9 @@
             <div class="tuktak-header">
                 <div class="header-left-badges">
                     <div class="task-badge-header" id="tuktak-badge">MS 01</div>
-                    <!-- 💡 [추가된 부분] 성취도 표시 뱃지 -->
-                    <div class="task-badge-header" id="tuktak-status" style="display:none; font-size:14px; margin-left:4px;"></div>
+                    <!-- 💡 진행률(카운터)을 가운데로 올리고 성취도(상태)를 맨 끝으로 내렸습니다. -->
                     <div class="card-counter" id="tuktak-counter" style="margin-left:4px;">1 / 24</div>
+                    <div class="task-badge-header" id="tuktak-status" style="display:none; font-size:14px; margin-left:4px;"></div>
                 </div>
                 <button class="back-btn" onclick="exitTuktak()"><i class="fas fa-times"></i></button>
             </div>
@@ -388,11 +397,18 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- 💡 줍줍 버튼을 아이콘+숫자 뱃지 형태로 심플하게 변경 -->
-                            <button class="icon-btn jub-btn" id="btn-jub" onclick="openEditModal(event)">
-                                🧺 <span id="jub-count-badge" class="jub-badge">0</span>
-                            </button>
+                            <!-- 💡 우측에 상황 메모(ℹ️) 버튼과 줍줍(🧺) 버튼 나란히 배치 -->
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <button class="icon-btn jub-btn" id="btn-card-memo" onclick="openContextModalFromCard(event)" style="font-size:16px;">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                                <button class="icon-btn jub-btn" id="btn-jub" onclick="openEditModal(event)">
+                                    🧺 <span id="jub-count-badge" class="jub-badge">0</span>
+                                </button>
+                            </div>
                         </div>
+
+
 
                         <div class="eng-box">
                             <div class="text-content eng-text" id="tuktak-eng"></div>
@@ -425,8 +441,8 @@
                 </div>
             </div>
         </div>
-        <!-- 🔥 추가할 하단 앱 관리 컨트롤 -->
-        <div class="bottom-controls">
+        <!-- 🔥 하단 앱 관리 컨트롤 (id 추가) -->
+        <div class="bottom-controls" id="bottom-app-controls">
             <button class="btn-bottom" onclick="resetAllData()">🔄 학습 데이터 리셋</button>
             <button class="btn-bottom btn-logout" onclick="signOut()">🚪 로그아웃</button>
         </div>
@@ -466,21 +482,44 @@
         </div>
     </div>
 
-    <!-- ✏️ 줍줍/변형 모달 -->
+    <!-- ✏️ 줍줍/변형 및 수정 모달 (발음기호 칸 추가) -->
     <div class="modal-overlay" id="edit-modal">
         <div class="edit-modal">
-            <h3>🧺 장바구니 담기 (변형)</h3>
+            <h3 id="edit-modal-title">🧺 장바구니 담기 (변형)</h3>
             <span class="edit-label">한글 뜻 (상황에 맞게 수정)</span>
             <textarea id="edit-kor" rows="2"></textarea>
             <span class="edit-label">영어 문장 (내 표현으로 수정)</span>
-            <textarea id="edit-eng" rows="3"></textarea>
+            <textarea id="edit-eng" rows="2"></textarea>
+            <span class="edit-label">발음 기호 (비워두면 저장 시 자동 생성됩니다 ✨)</span>
+            <input type="text" id="edit-ipa" class="login-input" style="margin-bottom:14px; padding:10px; font-size:14px;" placeholder="/발음기호 자동 생성/">
             
-            <!-- 💡 [추가] 기존에 담아둔 문장들을 표시할 공간 -->
-            <div id="existing-jubs-list" style="margin-top:4px; margin-bottom:12px; font-size:13px; color:#495057; text-align:left;"></div>
+            <div id="existing-jubs-list" style="margin-top:4px; margin-bottom:12px; font-size:13px; color:#495057; text-align:left; max-height:120px; overflow-y:auto;"></div>
 
             <div class="modal-btns">
                 <button class="btn-cancel" onclick="closeEditModal()">취소</button>
-                <button class="btn-add-new" onclick="saveEditedJub()">[장바구니 담기]</button>
+                <button class="btn-add-new" id="btn-save-jub" onclick="saveEditedJub()">[장바구니 담기]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ℹ️ 상황 이해 훈련 카드 (메모 모달) -->
+    <div class="modal-overlay" id="context-modal">
+        <div class="edit-modal" style="max-width:440px; text-align:left;">
+            <span style="font-size:12px; font-weight:700; color:#868e96;">상황 이해 훈련 카드</span>
+            <h3 style="margin-top:4px; margin-bottom:14px; font-size:17px;">대사를 듣고 다음을 생각해 보세요.</h3>
+            
+            <div style="background:#f8f9fa; padding:14px; border-radius:12px; margin-bottom:14px; font-size:13px; line-height:1.5; color:#495057; border:1px solid #e9ecef;">
+                <div style="margin-bottom:8px;"><b>1. 지금 무슨 일이 일어나고 있지?</b><br><span style="color:#868e96; font-size:12px;">눈에 보이는 사실만 적어요. 해석은 나중에 해도 돼요.</span></div>
+                <div style="margin-bottom:8px;"><b>2. 화자는 상대방에게 무엇을 해 주고 싶지?</b><br><span style="color:#868e96; font-size:12px;">위로하기, 부담 덜어 주기, 설득하기, 거절하기, 관심 표현하기 등.</span></div>
+                <div style="margin-bottom:8px;"><b>3. 왜 이 말을 지금 했을까?</b><br><span style="color:#868e96; font-size:12px;">상대방의 어떤 말이나 행동에 대한 반응인지 살펴봐요.</span></div>
+                <div><b>4. 상대방은 이 말을 듣고 어떻게 받아들일까?</b><br><span style="color:#868e96; font-size:12px;">안심할 수도 있고, 부담을 덜 수도 있고, 반대로 서운할 수도 있어요.</span></div>
+            </div>
+
+            <span class="edit-label">📝 나의 상황 메모</span>
+            <textarea id="context-memo-input" rows="4" placeholder="이 문장이 쓰이는 상황과 느낌을 자유롭게 메모해 보세요."></textarea>
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeContextModal()">닫기</button>
+                <button class="btn-add-new" onclick="saveContextMemo()">메모 저장</button>
             </div>
         </div>
     </div>
@@ -542,7 +581,7 @@
         const auth = firebase.auth(); const db = firebase.firestore();
 
         let currentUserUid = null;
-        let userDB = { completedTasks: {}, jubs: [], cardStats: {} };
+        let userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {} };
 
         auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -627,6 +666,7 @@
                     if(!userDB.completedTasks) userDB.completedTasks = {};
                     if(!userDB.jubs) userDB.jubs = [];
                     if(!userDB.cardStats) userDB.cardStats = {};
+                    if(!userDB.cardMemos) userDB.cardMemos = {};
                 } else {
                     // 신규 유저 생성 시
                     userDB = { completedTasks: {}, jubs: [], cardStats: {}, passwordChanged: false };
@@ -1036,6 +1076,7 @@
             renderListItems(); 
         }
 
+        // 💡 리스트 렌더링 (네모 박스 제거 버전 + ℹ️ 메모 및 ✏️ 수정 아이콘 추가)
         function renderListItems() {
             const list = globalTempLists[currentListIdx];
             const wrapper = document.getElementById(currentListType + '-list-wrapper');
@@ -1043,33 +1084,44 @@
 
             list.forEach((card, index) => {
                 let item = document.createElement('div'); item.className = 'jub-item';
-                
-                // 💡 [추가] 리스트 항목에 마우스 포인터 적용 및 클릭 시 개별 재생 이벤트 연결
                 item.style.cursor = 'pointer';
                 item.onclick = (e) => playSingleListCard(index, e);
 
-                // 휴지통 버튼과 겹치지 않게 텍스트 영역에 flex:1 부여
-                let html = '<div class="jub-item-text" style="flex:1;">';
-                
+                let html = '<div class="jub-item-text" style="flex:1; padding-right:10px;">';
                 if(isListEngFirst) {
                     html += `<div class="eng text-green">${card.eng}</div>`;
                     if(card.ipa) html += `<div style="font-size:13px; color:#868e96; margin-top:3px;">${card.ipa}</div>`;
-                    html += `<div class="kor text-gray" style="margin-top:8px;">${card.kor}</div>`;
+                    html += `<div class="kor text-gray" style="margin-top:6px;">${card.kor}</div>`;
                 } else {
                     html += `<div class="kor text-green" style="font-size:16px;">${card.kor}</div>`;
                     html += `<div class="eng text-gray" style="margin-top:6px;">${card.eng}</div>`;
                     if(card.ipa) html += `<div style="font-size:13px; color:#868e96; margin-top:3px;">${card.ipa}</div>`;
                 }
                 
-                html += `<div style="font-size:11px; color:#adb5bd; margin-top:8px;"><b>${card.badge}</b></div></div>`;
+                // 메모가 있으면 리스트 하단에 살짝 미리보기 표시
+                const memoKey = card.ch + "_" + card.originalEng;
+                const memoText = userDB.cardMemos && userDB.cardMemos[memoKey] ? userDB.cardMemos[memoKey] : "";
+                if (memoText) {
+                    html += `<div style="font-size:12px; color:#1864ab; background:#e7f5ff; padding:6px 10px; border-radius:6px; margin-top:8px; display:inline-block;"><i class="fas fa-info-circle"></i> ${memoText}</div>`;
+                }
+
+                html += `<div style="font-size:11px; color:#adb5bd; margin-top:6px;"><b>${card.badge}</b></div></div>`;
+                
+                // 우측 액션 버튼 그룹 (ℹ️ 메모, ✏️ 수정, 🗑️ 삭제)
+                html += `<div class="item-actions">`;
+                html += `<button class="btn-icon-action ${memoText ? 'has-memo' : ''}" onclick="openContextModal('${card.ch}', '${card.originalEng.replace(/'/g, "\\'")}', event)"><i class="fas fa-info-circle"></i></button>`;
                 
                 if(currentListType === 'basket' && card.jubId) {
-                    // 💡 [수정] 휴지통 삭제 시 듣기 이벤트가 발생하지 않도록 event 객체 전달
+                    html += `<button class="btn-icon-action" onclick="openEditJubFromList('${card.jubId}', event)"><i class="fas fa-pencil-alt"></i></button>`;
                     html += `<button class="btn-remove-jub" onclick="removeJubById('${card.jubId}', event)"><i class="fas fa-trash-can"></i></button>`;
                 }
+                html += `</div>`;
+
                 item.innerHTML = html; wrapper.appendChild(item);
             });
         }
+
+
 
 
         function removeJubById(id, e) {
@@ -1221,11 +1273,13 @@
         // =========================================================================
         let currentDeck = []; let currentCardIndex = 0; let currentTaskId = null; let currentChStr = ""; let isAnswerRevealed = false; let audioTimer = null;
         
-        // 🎙️ 녹음 관련 변수
+        // 🎙️ [수정] 녹음 관련 변수 (마이크 스트림을 끄지 않고 유지하기 위한 전역 변수 추가)
         let mediaRecorder;
         let audioChunks = [];
         let userAudioUrl = null;
-        let userAudioPlayer = new Audio();
+        let globalAudioStream = null; // 💡 핵심: 마이크 연결을 유지하여 3초 볼륨 작아짐(Fade-in) 원천 차단!
+
+
 
         function startTuktakDaily(chStr, dayLabel) {
             if (typeof studyData === 'undefined') return alert("⚠️ data.js 파일이 없습니다!");
@@ -1271,14 +1325,38 @@
             launchTuktakView();
         }
 
+        // 💡 [신규] 학습 화면 진입 시 마이크를 백그라운드에서 미리 켜두는(예열) 함수
+        async function warmupMicrophone() {
+            if (!globalAudioStream || !globalAudioStream.active) {
+                try {
+                    globalAudioStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false
+                        } 
+                    });
+                } catch (e) {
+                    console.log("마이크 사전 예열 대기 중 (버튼 클릭 시 재요청됩니다)");
+                }
+            }
+        }
+
         function launchTuktakView() {
             stopNativeAudio();
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             document.getElementById('view-tuktak').classList.add('active');
             document.body.classList.add('tuktak-mode');
+            
+            // 💡 [추가] 단어 카드 학습 중일 때는 하단 리셋/로그아웃 버튼 숨기기
+            const bottomControls = document.getElementById('bottom-app-controls');
+            if (bottomControls) bottomControls.style.display = 'none';
+
             currentCardIndex = 0;
+            warmupMicrophone(); 
             showCard();
         }
+
 
 
         function showCard() {
@@ -1358,47 +1436,77 @@
         }
 
 
-        /// 🎙️ [수정] 실제 녹음 시작 (호환성 개선 및 팝업 문장 추가)
+        // 🎙️ [완벽 개선] 실제 녹음 시작
         async function startRecording() {
+            const btn = document.getElementById('btn-speak-record');
+            btn.innerHTML = '⏳ 준비 중...';
+            btn.style.background = '#adb5bd';
+            btn.disabled = true;
+
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
+                // 💡 [해결 1] 마이크가 꺼져있을 때만 새로 켜고, 이미 켜져 있다면 기존 마이크를 그대로 재사용! (초반 3초 볼륨 저하 방지)
+                if (!globalAudioStream || !globalAudioStream.active) {
+                    globalAudioStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false
+                        } 
+                    });
+                }
+                
+                mediaRecorder = new MediaRecorder(globalAudioStream);
                 audioChunks = [];
                 mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
+                
                 mediaRecorder.onstop = () => {
-                    // 💡 [해결 포인트] 특정 포맷을 강제하지 않고 브라우저(아이폰 등) 기본 포맷으로 생성하게 함
-                    const audioBlob = new Blob(audioChunks); 
-                    if (userAudioUrl) URL.revokeObjectURL(userAudioUrl); // 메모리 누수 방지용 기존 파일 삭제
+                    const mimeType = mediaRecorder.mimeType || 'audio/mp4';
+                    const audioBlob = new Blob(audioChunks, { type: mimeType }); 
+                    if (userAudioUrl) URL.revokeObjectURL(userAudioUrl);
                     userAudioUrl = URL.createObjectURL(audioBlob);
                     
                     const player = document.getElementById('user-audio-player');
+                    player.volume = 1.0; // 💡 볼륨을 항상 100% 최대치로 고정
                     player.src = userAudioUrl;
+                    player.load();
                     
-                    // 💡 [새로 추가된 부분] 팝업창에 현재 영어 문장 띄워주기
                     const card = currentDeck[currentCardIndex];
                     document.getElementById('eval-popup-eng').innerText = card.eng;
-                    
-                    // 녹음이 끝나면 평가 팝업 오픈!
                     document.getElementById('eval-popup-modal').classList.add('active');
                 };
+
+                // 💡 [해결 2] 200ms 쪼개기를 제거하고 순정 start()를 사용하여 사파리 오디오 깨짐 방지
                 mediaRecorder.start();
                 
-                // 버튼 UI 변경
-                const btn = document.getElementById('btn-speak-record');
-                btn.innerHTML = '🛑 녹음 완료하기';
-                btn.style.background = '#fa5252';
-                btn.onclick = stopRecording;
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = '🛑 지금 말하세요! (완료 시 터치)';
+                    btn.style.background = '#fa5252';
+                    btn.onclick = stopRecording;
+                }, 150); // 마이크가 이미 켜져 있으므로 대기 시간을 0.15초로 단축!
+
             } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = '🎤 녹음 시작하기';
+                btn.style.background = '#5ba4ff';
                 alert("마이크 접근 권한이 필요합니다. 기기 설정에서 마이크를 허용해 주세요!");
             }
         }
-        
+
 
         // 🎙️ [수정] 녹음 종료
         function stopRecording() {
             if(mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(t => t.stop()); // 마이크 끄기 (권한 아이콘 사라짐)
+                const btn = document.getElementById('btn-speak-record');
+                btn.innerHTML = '⏳ 녹음 저장 중...';
+                btn.disabled = true;
+
+                setTimeout(() => {
+                    mediaRecorder.stop();
+                    // 💡 핵심: 여기서 마이크(stream)를 끄지 않습니다! 
+                    // 끄지 않고 유지해야 다음 문장을 녹음할 때 OS가 첫 3초 볼륨을 줄이는 현상이 사라집니다.
+                    btn.disabled = false;
+                }, 200);
             }
         }
 
@@ -1429,32 +1537,43 @@
             updateJubButtonState(); 
         }
 
-        // 🎧 내 녹음 듣기 (이미 학습된 카드를 불러올 경우의 예외 처리)
+        // 🎧 [수정] 내 녹음 듣기
         function playUserAudio() {
+            stopNativeAudio();
             const player = document.getElementById('user-audio-player');
-            if (player.src && userAudioUrl) {
+            
+            if (userAudioUrl) {
+                player.pause();
+                player.volume = 1.0; // 볼륨 최대치 확인
                 player.currentTime = 0;
-                player.play().catch(e => alert("녹음 재생에 실패했습니다. 다시 녹음해 주세요."));
+                
+                setTimeout(() => {
+                    const playPromise = player.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => {
+                            console.error("오디오 재생 오류:", e);
+                            alert("녹음 재생에 실패했습니다. [재녹음하기]를 눌러 다시 녹음해 주세요.");
+                        });
+                    }
+                }, 50);
             } else {
-                // 💡 과거에 이미 학습해서 녹음 파일이 로드되지 않은 상태
                 alert("현재 녹음된 파일이 없습니다. [재녹음하기]를 눌러 먼저 녹음해 주세요.");
             }
         }
 
-        // 🔄 재녹음하기
+
+
+        // 🔄 [수정] 재녹음하기 클릭 시 대기 없이 즉시 녹음 시작!
         function reRecord() {
-            isAnswerRevealed = false;
-            document.getElementById('eng-half').classList.remove('revealed');
-            document.getElementById('user-record-controls').style.display = 'none';
-            document.getElementById('card-nav-buttons').style.display = 'none';
-            
-            const btn = document.getElementById('btn-speak-record');
-            btn.innerHTML = '🎤 다시 녹음하기';
-            btn.style.background = '#5ba4ff';
-            btn.onclick = startRecording;
-            
-            document.getElementById('action-speak').style.display = 'flex';
-        }
+    stopNativeAudio(); // 💡 포함됨
+    isAnswerRevealed = false;
+    document.getElementById('eng-half').classList.remove('revealed');
+    document.getElementById('user-record-controls').style.display = 'none';
+    document.getElementById('card-nav-buttons').style.display = 'none';
+
+    document.getElementById('action-speak').style.display = 'flex';
+    startRecording(); 
+}
 
 
 
@@ -1483,27 +1602,30 @@
 
         // 💡 4단계: 화살표로 이전/다음 카드 이동
         function prevCard(e) {
-            if(e) e.stopPropagation();
-            if(currentCardIndex > 0) { currentCardIndex--; showCard(); }
-        }
+    if(e) e.stopPropagation();
+    stopNativeAudio(); // 💡 추가
+    if(currentCardIndex > 0) { currentCardIndex--; showCard(); }
+}
 
         // 💡 [수정] UE 줍줍 팝업 검사 로직 적용
         function nextCard(e) {
-            if(e) e.stopPropagation();
-            
-            const card = currentDeck[currentCardIndex];
-            if (card.badge.includes('UE')) {
-                const count = userDB.jubs.filter(j => j.originalEng === card.originalEng).length;
-                if (count === 0) {
-                    // 경고창 대신 팝업 오픈
-                    document.getElementById('ue-prompt-modal').classList.add('active');
-                    return; 
-                }
-            }
-            
-            currentCardIndex++;
-            showCard();
+    if(e) e.stopPropagation();
+    stopNativeAudio(); // 💡 추가
+
+    const card = currentDeck[currentCardIndex];
+    if (card.badge.includes('UE')) {
+        const count = userDB.jubs.filter(j => j.originalEng === card.originalEng).length;
+        if (count === 0) {
+            document.getElementById('ue-prompt-modal').classList.add('active');
+            return; 
         }
+    }
+
+    currentCardIndex++;
+    showCard();
+}
+
+
 
         // 💡 [신규] UE 팝업: 예 (원본 저장)
         function uePromptYes() {
@@ -1534,28 +1656,25 @@
             openEditModal();
         }
 
+        // 💡 카드 상단 뱃지 및 ℹ️ 메모 아이콘 활성화 상태 업데이트
         function updateJubButtonState() {
             const card = currentDeck[currentCardIndex];
             if(!card) return;
+            
             const count = userDB.jubs.filter(j => j.originalEng === card.originalEng).length;
             const badge = document.getElementById('jub-count-badge'); 
             if(badge) {
                 badge.innerText = count;
                 badge.style.background = count > 0 ? '#ff6b6b' : '#adb5bd';
             }
-        }
 
-        // 💡 [수정] 뱃지 카운터 업데이트 (ID 매칭 완벽 처리)
-        function updateJubButtonState() {
-            const card = currentDeck[currentCardIndex];
-            if(!card) return;
-            
-            const count = userDB.jubs.filter(j => j.originalEng === card.originalEng).length;
-            const badge = document.getElementById('jub-count-badge'); 
-            
-            if(badge) {
-                badge.innerText = count;
-                badge.style.background = count > 0 ? '#ff6b6b' : '#adb5bd';
+            // 메모 유무에 따라 카드 상단 ℹ️ 아이콘 색상 변경
+            const memoKey = card.ch + "_" + card.originalEng;
+            const hasMemo = userDB.cardMemos && userDB.cardMemos[memoKey];
+            const memoBtn = document.getElementById('btn-card-memo');
+            if (memoBtn) {
+                memoBtn.style.color = hasMemo ? '#339af0' : '#495057';
+                memoBtn.style.opacity = hasMemo ? '1' : '0.5';
             }
         }
 
@@ -1571,14 +1690,25 @@
         }
 
         function exitTuktak() { 
+            stopNativeAudio(); 
+            if (globalAudioStream) {
+                globalAudioStream.getTracks().forEach(t => t.stop());
+                globalAudioStream = null;
+            }
+
+            // 💡 [추가] 학습 화면을 빠져나올 때 하단 리셋/로그아웃 버튼 다시 보이게 복구
+            const bottomControls = document.getElementById('bottom-app-controls');
+            if (bottomControls) bottomControls.style.display = 'flex';
+
             const activeTabIdx = Array.from(document.querySelectorAll('.nav-tab')).findIndex(t => t.classList.contains('active'));
             if(activeTabIdx === 0) switchView('tracker');
             else if(activeTabIdx === 1) switchView('learn');
             else switchView('basket');
         }
 
+
         // =========================================================================
-        // 🎧 원어민 오디오 재생 및 청크 재생 (배속 적용)
+        // 🎧 원어민 오디오 재생 및 청크 재생 (TTS 오작동 완벽 방지 버전)
         // =========================================================================
         function playNativeAudio(e) {
             if(e) e.stopPropagation();
@@ -1586,24 +1716,57 @@
             const card = currentDeck[currentCardIndex];
             if (!card) return;
 
-            const currentEngText = document.getElementById('tuktak-eng').innerText || card.eng;
-            if (currentEngText !== card.originalEng) { playFallbackTTS(currentEngText); return; }
+            // 💡 [해결 1] 화면(DOM)의 텍스트가 아닌, 순수 데이터 기준으로 변형 문장 여부 판별 (공백 오류 완전 차단)
+            const cleanEng = (card.eng || "").replace(/\s+/g, " ").trim();
+            const cleanOrig = (card.originalEng || "").replace(/\s+/g, " ").trim();
+            
+            if (cleanEng !== cleanOrig) { 
+                playFallbackTTS(card.eng); 
+                return; 
+            }
 
             if (card.audio && card.end > card.start) {
                 const player = document.getElementById('native-audio-player');
-                if (!player.src.endsWith(encodeURI(card.audio))) player.src = card.audio;
                 
-                player.playbackRate = currentAudioSpeed;
-                player.currentTime = card.start;
-                const durationMs = ((card.end - card.start) * 1000) / currentAudioSpeed;
+                // 오디오 구간을 안전하게 재생하는 내부 함수
+                const startPlay = () => {
+                    player.playbackRate = currentAudioSpeed;
+                    player.currentTime = card.start;
+                    const durationMs = ((card.end - card.start) * 1000) / currentAudioSpeed;
 
-                const playPromise = player.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => { audioTimer = setTimeout(() => { player.pause(); }, durationMs); })
-                    .catch(() => { playFallbackTTS(currentEngText); });
+                    const playPromise = player.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => { 
+                            if (audioTimer) clearTimeout(audioTimer);
+                            audioTimer = setTimeout(() => { player.pause(); }, durationMs); 
+                        }).catch((err) => { 
+                            console.warn("원어민 음원 재생 실패, TTS로 대체합니다:", err);
+                            playFallbackTTS(card.eng); 
+                        });
+                    }
+                };
+
+                // 💡 [해결 2] 다른 챕터의 오디오 파일이거나 아직 로딩이 안 된 경우, 준비 완료(canplay) 후 재생!
+                if (!player.src.endsWith(encodeURI(card.audio))) {
+                    player.src = card.audio;
+                    player.load();
+                    player.oncanplay = () => {
+                        player.oncanplay = null; // 중복 실행 방지
+                        startPlay();
+                    };
+                    player.onerror = () => {
+                        player.onerror = null;
+                        playFallbackTTS(card.eng);
+                    };
+                } else {
+                    startPlay();
                 }
-            } else { playFallbackTTS(currentEngText); }
+            } else { 
+                // data.js에 start, end 시간이 누락되어 있거나 0으로 잘못 적힌 경우
+                playFallbackTTS(card.eng); 
+            }
         }
+
 
         function playChunk(idx, e) {
             if(e) e.stopPropagation();
@@ -1614,28 +1777,62 @@
             const chunk = card.chunks[idx];
             if (card.audio && chunk.e > chunk.s) {
                 const player = document.getElementById('native-audio-player');
-                if (!player.src.endsWith(encodeURI(card.audio))) player.src = card.audio;
                 
-                player.playbackRate = currentAudioSpeed;
-                player.currentTime = chunk.s;
-                const durationMs = ((chunk.e - chunk.s) * 1000) / currentAudioSpeed;
-                
-                const playPromise = player.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => { audioTimer = setTimeout(() => { player.pause(); }, durationMs); })
-                    .catch(() => { playFallbackTTS(chunk.text); });
+                const startChunkPlay = () => {
+                    player.playbackRate = currentAudioSpeed;
+                    player.currentTime = chunk.s;
+                    const durationMs = ((chunk.e - chunk.s) * 1000) / currentAudioSpeed;
+                    
+                    const playPromise = player.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => { 
+                            if (audioTimer) clearTimeout(audioTimer);
+                            audioTimer = setTimeout(() => { player.pause(); }, durationMs); 
+                        }).catch(() => { 
+                            playFallbackTTS(chunk.text); 
+                        });
+                    }
+                };
+
+                if (!player.src.endsWith(encodeURI(card.audio))) {
+                    player.src = card.audio;
+                    player.load();
+                    player.oncanplay = () => {
+                        player.oncanplay = null;
+                        startChunkPlay();
+                    };
+                } else {
+                    startChunkPlay();
                 }
-            } else { playFallbackTTS(chunk.text); }
+            } else { 
+                playFallbackTTS(chunk.text); 
+            }
         }
 
+
+
+        // 🎧 [완벽 통합] 재생 중인 모든 오디오(원어민, TTS, 내 녹음)를 확실하게 정지시키는 중앙 제어 함수
         function stopNativeAudio() {
             const player = document.getElementById('native-audio-player');
+            const userPlayer = document.getElementById('user-audio-player'); // 💡 내 녹음 플레이어 추가
+
             if (audioTimer) { clearTimeout(audioTimer); audioTimer = null; }
             if (playAllTimer) { clearTimeout(playAllTimer); playAllTimer = null; }
-            if (player) { player.pause(); player.playbackRate = 1.0; }
+            
+            if (player) { 
+                player.pause(); 
+                player.playbackRate = 1.0; 
+                player.oncanplay = null; // 대기 중이던 로딩 이벤트도 취소
+            }
+            
+            if (userPlayer) {
+                userPlayer.pause(); // 💡 재생 중이던 내 녹음도 즉시 정지
+            }
+
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             isPlayingAll = false;
         }
+
 
         function playFallbackTTS(text) {
             if ('speechSynthesis' in window) {
@@ -1716,6 +1913,183 @@
         }
 
 
+// =========================================================================
+        // 🧺 장바구니 담기, 리스트에서 수정하기 & ✨ 자동 발음기호(IPA) 생성기
+        // =========================================================================
+        let editingJubId = null; // null이면 새로 담기, 값이 있으면 기존 줍줍 수정
+
+        // 무료 사전 API를 통해 영어 문장의 발음기호를 자동 조합하는 함수
+        async function fetchAutoIPA(sentence) {
+            const words = sentence.replace(/[^a-zA-Z\s']/g, "").trim().split(/\s+/);
+            if (words.length === 0 || !words[0]) return "";
+            
+            const ipaPromises = words.map(async (w) => {
+                try {
+                    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${w.toLowerCase()}`);
+                    if (!res.ok) return w;
+                    const data = await res.json();
+                    let phonetic = data[0].phonetic;
+                    if (!phonetic && data[0].phonetics) {
+                        const found = data[0].phonetics.find(p => p.text);
+                        if (found) phonetic = found.text;
+                    }
+                    return phonetic ? phonetic.replace(/\//g, '') : w;
+                } catch { return w; }
+            });
+            const results = await Promise.all(ipaPromises);
+            return "/" + results.join(" ") + "/";
+        }
+
+        // 1) 학습 카드에서 줍줍 모달 열기 (새로 추가)
+        function openEditModal(e) {
+            if(e) e.stopPropagation(); 
+            editingJubId = null;
+            const card = currentDeck[currentCardIndex];
+            
+            document.getElementById('edit-modal-title').innerText = "🧺 장바구니 담기 (변형)";
+            document.getElementById('btn-save-jub').innerText = "[장바구니 담기]";
+            document.getElementById('edit-kor').value = document.getElementById('tuktak-kor').innerText;
+            document.getElementById('edit-eng').value = document.getElementById('tuktak-eng').innerText;
+            document.getElementById('edit-ipa').value = ""; // 비워두면 자동 생성
+            
+            const existing = userDB.jubs.filter(j => j.originalEng === card.originalEng);
+            const container = document.getElementById('existing-jubs-list');
+            if (existing.length > 0) {
+                let html = '<hr style="border:0; border-top:1px dashed #dee2e6; margin:10px 0;">';
+                html += '<div style="font-weight:800; font-size:12px; color:#495057; margin-bottom:6px;">💡 이전에 담아둔 문장들</div>';
+                existing.forEach(j => {
+                    html += `<div style="background:#f1f3f5; border-radius:8px; padding:8px 10px; margin-bottom:6px;">
+                        <div style="color:#2b8a3e; font-weight:700; font-size:13px;">${j.eng}</div>
+                        <div style="color:#868e96; font-size:12px; margin-top:2px;">${j.kor}</div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } else { container.innerHTML = ''; }
+            
+            document.getElementById('edit-modal').classList.add('active');
+        }
+
+        // 2) 줍줍 리스트에서 연필(✏️) 눌러 수정 모달 열기
+        function openEditJubFromList(id, e) {
+            if(e) e.stopPropagation();
+            const jub = userDB.jubs.find(j => j.id === id);
+            if(!jub) return;
+
+            editingJubId = id;
+            document.getElementById('edit-modal-title').innerText = "✏️ 줍줍 문장 수정";
+            document.getElementById('btn-save-jub').innerText = "[수정 완료]";
+            document.getElementById('edit-kor').value = jub.kor;
+            document.getElementById('edit-eng').value = jub.eng;
+            document.getElementById('edit-ipa').value = jub.ipa || "";
+            document.getElementById('existing-jubs-list').innerHTML = '';
+            document.getElementById('edit-modal').classList.add('active');
+        }
+
+        function closeEditModal() { document.getElementById('edit-modal').classList.remove('active'); editingJubId = null; }
+
+        async function saveEditedJub() {
+            const newKor = document.getElementById('edit-kor').value.trim();
+            const newEng = document.getElementById('edit-eng').value.replace(/\r?\n|\r/g, " ").replace(/\s+/g, " ").trim();
+            let newIpa = document.getElementById('edit-ipa').value.trim();
+            
+            if (!newKor || !newEng) { alert("한글과 영어를 모두 입력해주세요."); return; }
+
+            const saveBtn = document.getElementById('btn-save-jub');
+            const origBtnText = saveBtn.innerText;
+            saveBtn.innerText = "발음기호 생성 중...";
+            saveBtn.disabled = true;
+
+            // A. 리스트에서 기존 줍줍 문장을 수정하는 경우
+            if (editingJubId) {
+                let jub = userDB.jubs.find(j => j.id === editingJubId);
+                if (jub) {
+                    const isModified = jub.originalEng !== newEng;
+                    if (!newIpa && isModified) { newIpa = await fetchAutoIPA(newEng); }
+                    jub.kor = newKor;
+                    jub.eng = newEng;
+                    jub.ipa = newIpa;
+                    if (isModified && !jub.section.includes("(변형)")) jub.section += " (변형)";
+                    
+                    // 현재 열려있는 임시 리스트 데이터도 동기화
+                    const tempCard = globalTempLists[currentListIdx].find(c => c.jubId === editingJubId);
+                    if (tempCard) { tempCard.kor = newKor; tempCard.eng = newEng; tempCard.ipa = newIpa; tempCard.badge = jub.section; }
+                }
+                saveBtn.innerText = origBtnText; saveBtn.disabled = false;
+                saveDB(); closeEditModal(); renderListItems(); renderBasketTable();
+                return;
+            }
+
+            // B. 카드에서 새로 장바구니에 담는 경우
+            const card = currentDeck[currentCardIndex];
+            const originalEngClean = card.originalEng.replace(/\r?\n|\r/g, " ").replace(/\s+/g, " ").trim();
+            const isModified = originalEngClean !== newEng;
+
+            if (!newIpa) {
+                newIpa = isModified ? await fetchAutoIPA(newEng) : (card.ipa || "");
+            }
+
+            userDB.jubs.push({ 
+                id: Date.now().toString(), 
+                ch: currentChStr, 
+                baseType: card.baseType || "Unknown",
+                section: card.badge + (isModified ? " (변형)" : ""), 
+                kor: newKor, 
+                eng: newEng, 
+                ipa: newIpa, 
+                audio: isModified ? "" : (card.audio || ""), 
+                start: isModified ? 0 : (card.start || 0), 
+                end: isModified ? 0 : (card.end || 0), 
+                originalEng: originalEngClean
+            });
+            
+            saveBtn.innerText = origBtnText; saveBtn.disabled = false;
+            alert("장바구니에 안전하게 저장되었습니다!");
+            saveDB(); closeEditModal(); updateJubButtonState();
+        }
+
+        // =========================================================================
+        // ℹ️ 상황 이해 훈련 카드 (메모 모달 제어)
+        // =========================================================================
+        let currentMemoKey = "";
+
+        function openContextModalFromCard(e) {
+            if(e) e.stopPropagation();
+            const card = currentDeck[currentCardIndex];
+            if(!card) return;
+            openContextModal(card.ch, card.originalEng, e);
+        }
+
+        function openContextModal(ch, originalEng, e) {
+            if(e) e.stopPropagation();
+            currentMemoKey = ch + "_" + originalEng;
+            if(!userDB.cardMemos) userDB.cardMemos = {};
+            document.getElementById('context-memo-input').value = userDB.cardMemos[currentMemoKey] || "";
+            document.getElementById('context-modal').classList.add('active');
+        }
+
+        function closeContextModal() {
+            document.getElementById('context-modal').classList.remove('active');
+        }
+
+        function saveContextMemo() {
+            if(!userDB.cardMemos) userDB.cardMemos = {};
+            const val = document.getElementById('context-memo-input').value.trim();
+            if(val) {
+                userDB.cardMemos[currentMemoKey] = val;
+            } else {
+                delete userDB.cardMemos[currentMemoKey];
+            }
+            saveDB();
+            closeContextModal();
+            
+            // 카드 화면이나 리스트 화면 즉시 갱신
+            if(document.getElementById('view-tuktak').classList.contains('active')) {
+                updateJubButtonState();
+            } else {
+                renderListItems();
+            }
+        }
+
 
 
         // =========================================================================
@@ -1783,12 +2157,14 @@
         }
 
 
+        // 맨 아래 데이터 리셋 함수 교체 (비밀번호 변경 이력 유지!)
         function resetAllData() {
             if(confirm("모든 학습 진행률과 줍줍 문장을 완전히 초기화하시겠습니까?\n(이 작업은 되돌릴 수 없습니다!)")) {
-                userDB = { completedTasks: {}, jubs: [], cardStats: {} };
+                const keepPwState = userDB.passwordChanged || false; // 💡 비번 변경 상태 백업
+                userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {}, passwordChanged: keepPwState };
                 saveDB();
                 alert("초기화가 완료되었습니다.");
-                updateDateDisplay(); // 화면 갱신
+                updateDateDisplay();
             }
         }
 
