@@ -6,8 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>누적 스터디 트래커 & 툭탁 (평가 모드)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- docx 파일 생성을 위한 라이브러리 추가 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.min.js"></script>
+
 
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -304,6 +303,13 @@
 </head>
 <body>
 
+    <!-- 🔴 [신규] 10월 25일까지 표시되는 얇은 테스트 모드 배너 -->
+    <div id="test-mode-banner" style="display:none; position:fixed; top:0; left:0; width:100%; height:26px; background:#fa5252; color:white; font-size:12px; font-weight:800; text-align:center; line-height:26px; z-index:1001;">
+        ⚠️ 현재 테스트 모드 운영 중 (10월 25일까지 날짜 자유 이동 가능)
+    </div>
+
+
+
     <!-- 🔒 로그인 오버레이 (ID 입력) -->
     <div class="login-overlay active" id="login-overlay">
         <div class="loading-spinner" id="login-spinner"></div>
@@ -383,7 +389,10 @@
                             <div class="lang-option opt-kor active">🇰🇷 한글</div>
                         </div>
                         
-                        <!-- 🔥 버닝모드 버튼 바로 우측에 아래처럼 추가해 주세요! -->
+                        <!-- 🎧 학습 탭 전용 전체듣기 버튼 -->
+                        <button id="btn-play-learn" class="btn-list-action" style="background:#eef4ff; color:#1d4ed8; border:1px solid #4dabf7;" onclick="playAllInList('learn')">🎧 전체듣기</button>
+                        
+                        <!-- 🔥 버닝모드 버튼 -->
                         <button class="btn-burning" onclick="startBurningMode()">🔥 버닝모드</button>
                     </div>
                 </div>
@@ -590,6 +599,44 @@
         </div>
     </div>
 
+
+    <!-- 🎧 [신규] 전체듣기 설정 모달 (듣기/섀도잉, 반복 횟수, 배속 선택) -->
+    <div class="modal-overlay" id="listen-config-modal">
+        <div class="edit-modal" style="width: 90%; max-width: 360px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin:0; font-size:18px; color:#1e293b;">🎧 전체듣기 모드 설정</h3>
+                <button onclick="closeListenConfigModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color:#868e96;"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- 1. 모드 선택 (듣기 vs 섀도잉) -->
+            <span class="edit-label">학습 모드 선택</span>
+            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                <button id="mode-btn-listen" style="flex:1; padding: 12px; border: 2px solid #4dabf7; background: #e7f5ff; color: #1d4ed8; border-radius: 10px; font-weight: 800; cursor: pointer;" onclick="setListenMode('listen')">🎧 일반 듣기</button>
+                <button id="mode-btn-shadow" style="flex:1; padding: 12px; border: 2px solid #e9ecef; background: #f8f9fa; color: #495057; border-radius: 10px; font-weight: 800; cursor: pointer;" onclick="setListenMode('shadow')">🗣️ 섀도잉 (따라하기)</button>
+            </div>
+
+            <!-- 2. 반복 횟수 선택 -->
+            <span class="edit-label">반복 횟수</span>
+            <select id="config-repeat-count" class="login-input" style="margin-bottom: 14px; padding: 10px; font-size: 14px; width: 100%;">
+                <option value="1">1회 반복</option>
+                <option value="2" selected>2회 반복</option>
+                <option value="3">3회 반복</option>
+                <option value="5">5회 반복</option>
+            </select>
+
+            <!-- 3. 재생 속도 선택 -->
+            <span class="edit-label">재생 속도</span>
+            <div style="display: flex; gap: 4px; margin-bottom: 20px;" id="config-speed-group">
+                <span class="speed-btn" style="flex:1; text-align:center; padding:10px 0; background:#f1f3f5; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px;" onclick="setConfigSpeed(0.2)">x0.2</span>
+                <span class="speed-btn" style="flex:1; text-align:center; padding:10px 0; background:#f1f3f5; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px;" onclick="setConfigSpeed(0.5)">x0.5</span>
+                <span class="speed-btn" style="flex:1; text-align:center; padding:10px 0; background:#f1f3f5; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px;" onclick="setConfigSpeed(0.7)">x0.7</span>
+                <span class="speed-btn active" style="flex:1; text-align:center; padding:10px 0; background:#e7f5ff; color:#339af0; border-radius:8px; font-weight:800; cursor:pointer; font-size:13px;" onclick="setConfigSpeed(1.0)">x1.0</span>
+            </div>
+
+            <!-- 시작 버튼 -->
+            <button style="width:100%; padding:14px; background:#2b8a3e; color:white; border:none; border-radius:12px; font-weight:800; cursor:pointer; font-size:15px;" onclick="startConfiguredPlayAll()">설정 완료 및 재생 시작</button>
+        </div>
+    </div>
 
 
 
@@ -1526,27 +1573,79 @@
             }
         }
 
-        // 리스트 전체 듣기 로직
-        let isPlayingAll = false; let playAllIndex = 0; let playAllList = []; let playAllTimer = null;
+// =========================================================================
+// 🎧 전체듣기 설정 팝업 및 섀도잉 / 반복 / 배속 엔진
+// =========================================================================
+let selectedListenMode = 'listen'; // 'listen' 또는 'shadow'
+let configPlaySpeed = 1.0;
+let currentRepeatLimit = 2;
+let currentRepeatCurrent = 0;
+let isPlayingAll = false; 
+        let playAllIndex = 0; 
+        let playAllList = []; 
+        let playAllTimer = null;
 
-        function playAllInList(type) {
-            if (type === 'basket') return;
-            const btn = document.getElementById('btn-play-learn');
 
-            if(isPlayingAll) {
-                isPlayingAll = false; stopNativeAudio();
-                btn.innerText = "🎧 전체듣기"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057";
-                return;
-            }
-            playAllList = globalTempLists[currentListIdx];
-            if(!playAllList || playAllList.length === 0) return;
+function playAllInList(type) {
+    if (type === 'basket') return;
+    const btn = document.getElementById('btn-play-learn');
 
-            isPlayingAll = true; playAllIndex = 0;
-            btn.innerText = "🛑 듣기 중지"; btn.style.background = "#ffe3e3"; btn.style.color = "#e03131";
-            playNextInList();
+    if (isPlayingAll) {
+        isPlayingAll = false; stopNativeAudio();
+        if(btn) { btn.innerText = "🎧 전체듣기"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057"; }
+        return;
+    }
+
+    playAllList = globalTempLists[currentListIdx];
+    if (!playAllList || playAllList.length === 0) return alert("재생할 문장이 없습니다!");
+
+    document.getElementById('listen-config-modal').classList.add('active');
+}
+
+function closeListenConfigModal() {
+    document.getElementById('listen-config-modal').classList.remove('active');
+}
+
+function setListenMode(mode) {
+    selectedListenMode = mode;
+    const btnListen = document.getElementById('mode-btn-listen');
+    const btnShadow = document.getElementById('mode-btn-shadow');
+    if (mode === 'listen') {
+        btnListen.style.borderColor = '#4dabf7'; btnListen.style.background = '#e7f5ff'; btnListen.style.color = '#1d4ed8';
+        btnShadow.style.borderColor = '#e9ecef'; btnShadow.style.background = '#f8f9fa'; btnShadow.style.color = '#495057';
+    } else {
+        btnShadow.style.borderColor = '#4dabf7'; btnShadow.style.background = '#e7f5ff'; btnShadow.style.color = '#1d4ed8';
+        btnListen.style.borderColor = '#e9ecef'; btnListen.style.background = '#f8f9fa'; btnListen.style.color = '#495057';
+    }
+}
+
+function setConfigSpeed(speed) {
+    configPlaySpeed = speed;
+    const buttons = document.querySelectorAll('#config-speed-group .speed-btn');
+    buttons.forEach(btn => {
+        btn.style.background = '#f1f3f5'; btn.style.color = '#495057'; btn.style.fontWeight = '700';
+        if (parseFloat(btn.innerText.replace('x', '')) === speed) {
+            btn.style.background = '#e7f5ff'; btn.style.color = '#339af0'; btn.style.fontWeight = '800';
         }
+    });
+}
 
-        function playNextInList() {
+function startConfiguredPlayAll() {
+    closeListenConfigModal();
+
+    currentAudioSpeed = configPlaySpeed;
+    currentRepeatLimit = parseInt(document.getElementById('config-repeat-count').value) || 1;
+    currentRepeatCurrent = 0;
+    playAllIndex = 0;
+    isPlayingAll = true;
+
+    const btn = document.getElementById('btn-play-learn');
+    if(btn) { btn.innerText = "🛑 듣기 중지"; btn.style.background = "#ffe3e3"; btn.style.color = "#e03131"; }
+
+    playNextInList();
+}
+
+	function playNextInList() {
             if(!isPlayingAll) return;
             const btn = document.getElementById('btn-play-learn');
             
@@ -1573,29 +1672,69 @@
                 
                 player.playbackRate = currentAudioSpeed;
                 player.currentTime = card.start;
+                
+                // 💡 [핵심] 지정된 구간(end - start)의 길이를 밀리초로 정확히 계산
                 const durationMs = ((card.end - card.start) * 1000) / currentAudioSpeed;
                 
                 const playPromise = player.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => { 
                         playAllTimer = setTimeout(() => { 
-                            player.pause(); playAllIndex++; playAllTimer = setTimeout(playNextInList, 800); 
+                            player.pause(); 
+                            handleRepetitionOrShadowing(durationMs);
                         }, durationMs); 
                     }).catch(() => { playTTSForList(card.eng); });
                 }
             } else { playTTSForList(card.eng); }
         }
 
-        function playTTSForList(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utter = new SpeechSynthesisUtterance(text);
-                utter.lang = 'en-US'; utter.rate = currentAudioSpeed * 0.95;
-                utter.onend = () => { if(!isPlayingAll) return; playAllIndex++; playAllTimer = setTimeout(playNextInList, 800); };
-                window.speechSynthesis.speak(utter);
+
+
+	// 🗣️ 섀도잉 모드: 마지막 반복을 포함하여 '모든 회차마다' 재생 시간 + 3초 여유를 적용하는 함수
+        function handleRepetitionOrShadowing(audioDurationMs) {
+            currentRepeatCurrent++;
+            
+            // 💡 섀도잉 모드라면 반복 회차와 상관없이 매번 문장 재생 시간 + 3초(3000ms) 여유를 줍니다.
+            let delayTime = 600; // 일반 듣기일 때의 반복 간격 (0.6초)
+            
+            if (selectedListenMode === 'shadow') {
+                delayTime = audioDurationMs + 3000; // 원본 재생 시간 + 3초 확실한 대기
+            }
+
+            if (currentRepeatCurrent < currentRepeatLimit) {
+                // 아직 설정된 반복 횟수가 남았으므로 같은 문장 다시 재생
+                playAllTimer = setTimeout(playNextInList, delayTime);
+            } else {
+                // 설정된 반복 횟수를 모두 채웠을 때 (마지막 회차 포함)
+                currentRepeatCurrent = 0; // 초기화
+                playAllIndex++; // 다음 문장으로 인덱스 이동
+                
+                // 💡 [핵심] 마지막 반복 회차가 끝날 때도 섀도잉 모드라면 3초 여유를 온전히 가진 뒤 다음 문장으로 넘어갑니다!
+                playAllTimer = setTimeout(playNextInList, delayTime);
             }
         }
 
+
+function playTTSForList(text) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'en-US'; utter.rate = currentAudioSpeed * 0.95;
+        utter.onend = () => { 
+            if(!isPlayingAll) return; 
+            currentRepeatCurrent++;
+            if (currentRepeatCurrent < currentRepeatLimit) {
+                playAllTimer = setTimeout(() => { playTTSForList(text); }, 600);
+            } else {
+                currentRepeatCurrent = 0;
+                let extraDelay = (selectedListenMode === 'shadow') ? 3800 : 800;
+                playAllIndex++; 
+                playAllTimer = setTimeout(playNextInList, extraDelay); 
+            }
+        };
+        window.speechSynthesis.speak(utter);
+    }
+}
 
         // =========================================================================
         // 📚 4. 툭탁 학습 엔진 (일일 미션 & 버닝모드 + 실제 녹음 기능)
@@ -1812,7 +1951,7 @@
                 
                 setTimeout(() => {
                     btn.disabled = false;
-                    btn.innerHTML = '🛑 지금 말하세요! (완료 시 터치)';
+                    btn.innerHTML = '🛑 녹음 중지';
                     btn.style.background = '#fa5252';
                     btn.onclick = stopRecording;
                 }, 150); // 마이크가 이미 켜져 있으므로 대기 시간을 0.15초로 단축!
@@ -2639,10 +2778,7 @@
 
 
 
-   <!-- 🔴 [신규] 10월 25일까지 표시되는 얇은 테스트 모드 배너 -->
-    <div id="test-mode-banner" style="display:none; position:fixed; top:0; left:0; width:100%; height:26px; background:#fa5252; color:white; font-size:12px; font-weight:800; text-align:center; line-height:26px; z-index:1001;">
-        ⚠️ 현재 테스트 모드 운영 중 (10월 25일까지 날짜 자유 이동 가능)
-    </div>
+
 
 
 </body>
