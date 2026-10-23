@@ -2,9 +2,13 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <title>Stack Up</title> <!-- 💡 여기에 타이틀을 지정해 줍니다 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>누적 스터디 트래커 & 툭탁 (평가 모드)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- docx 파일 생성을 위한 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.min.js"></script>
+
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
@@ -111,12 +115,12 @@
         .num-hesitant.clickable { color: #f59f00 !important; }
         .num-stuck.clickable { color: #e03131 !important; }
 
-        /* 클릭 시 나타나는 리스트 컨테이너 */
-        .list-container { margin-top: 10px; padding: 20px; background: white; border-radius: 16px; border: 2px solid #4dabf7; box-shadow: 0 4px 14px rgba(77, 171, 247, 0.15); display: none; }
+        /* 💡 [수정] 답답한 큰 파란색 박스 테두리를 완전히 제거하고 전체 화면 흐름으로 변경 */
+        .list-container { margin-top: 10px; padding: 0 4px; background: transparent; border: none; box-shadow: none; display: none; }
         .list-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 2px solid #f1f3f5; padding-bottom: 12px; }
         .list-header h3 { font-size: 17px; color: #1e293b; font-weight: 800; }
         .list-controls { display: flex; gap: 6px; align-items: center; }
-        
+       
         /* 한/영 슬라이딩 토글 스타일 */
         .lang-toggle-wrapper { position: relative; display: flex; background: #e9ecef; border-radius: 20px; padding: 2px; cursor: pointer; align-items: center; width: 120px; height: 32px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
         .lang-toggle-slider { position: absolute; top: 2px; left: 60px; width: 58px; height: 28px; background: #5ba4ff; border-radius: 18px; transition: left 0.25s cubic-bezier(0.4, 0.0, 0.2, 1); }
@@ -129,12 +133,26 @@
         .btn-burning { background: #ff6b6b; color: white; border: none; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3); transition: all 0.15s; height: 32px;}
         .btn-burning:active { transform: scale(0.95); }
         
-        /* 💡 [수정] 답답한 네모 박스를 없애고 시원한 밑줄 형태로 변경 */
-        .list-wrapper { display: flex; flex-direction: column; gap: 0; max-height: 500px; overflow-y: auto; padding-right: 4px; }
-        .jub-item { background: transparent; border-radius: 0; padding: 16px 8px; border: none; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s; }
-        .jub-item:last-child { border-bottom: none; }
-        .jub-item:active { background: #f8f9fa; }
-        
+        /* 💡 각 문장을 독립된 카드 형태의 네모 칸으로 디자인 */
+        .list-wrapper { display: flex; flex-direction: column; gap: 12px; max-height: none; overflow-y: visible; padding-right: 0; }
+        .jub-item { 
+            background: #ffffff; 
+            border-radius: 18px; 
+            padding: 18px 20px; 
+            border: 1px solid #e2e8f0; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            transition: transform 0.15s ease, box-shadow 0.15s ease; 
+        }
+        .jub-item:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06); 
+            border-color: #cbd5e1;
+        }
+        .jub-item:active { background: #f8fafc; }
+
         /* 리스트 텍스트 색상 */
         .text-green { color: #2b8a3e !important; font-weight: 800 !important; font-size: 16px !important; }
         .text-gray { color: #64748b !important; font-weight: 600 !important; font-size: 14px !important; }
@@ -146,6 +164,35 @@
         .btn-remove-jub { background: none; border: none; color: #fa5252; font-size: 17px; cursor: pointer; padding: 8px; }
 
         .btn-remove-jub { background: none; border: none; color: #fa5252; font-size: 18px; cursor: pointer; padding: 8px;}
+
+
+
+        /* 💡 우측 하단 플로팅 탑(🔝) 버튼을 부드러운 그레이톤으로 변경 */
+        #btn-scroll-top { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 20px; 
+            width: 50px; 
+            height: 50px; 
+            background: #e9ecef; /* 부드러운 연회색 배경 */
+            color: #495057;      /* 진회색 텍스트 및 아이콘 */
+            border: 1px solid #dee2e6; 
+            border-radius: 50%; 
+            font-size: 11px; 
+            font-weight: 800; 
+            cursor: pointer; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 999; 
+            transition: transform 0.2s, background 0.2s; 
+        }
+        #btn-scroll-top:active { 
+            transform: scale(0.92); 
+            background: #dee2e6; 
+        }
 
         /* 툭탁 뷰 헤더 */
         .tuktak-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
@@ -240,8 +287,20 @@
         .btn-logout { background: #ffe3e3; color: #e03131; }
 
 
+        /* 📄 A4 PDF 저장/인쇄 전용 스타일 */
+        @media print {
+            body * { visibility: hidden; }
+            #basket-list-container, #basket-list-container * { visibility: visible; }
+            #basket-list-container { position: absolute; left: 0; top: 0; width: 100%; border: none !important; box-shadow: none !important; }
+            .list-controls, .btn-remove-jub, .item-actions, #btn-scroll-top, .nav-tabs, .date-simulator { display: none !important; }
+            .jub-item { border-bottom: 1px solid #cbd5e1 !important; break-inside: avoid; }
+        }
+
 
     </style>
+
+
+
 </head>
 <body>
 
@@ -250,12 +309,12 @@
         <div class="loading-spinner" id="login-spinner"></div>
         <div id="login-content" class="login-box">
             <h1>스터디 트래커 & 툭탁</h1>
-            <p>개인별 진도 기록과 줍줍 문장을 저장합니다.<br>기억하기 쉬운 아이디를 입력해주세요.<br>(예: <b>koboogi</b>)</p>
+            <p>개인별 진도 기록과 줍줍 문장을 저장합니다.<br>아이디와 비밀번호를 입력해주세요.</p>
             <input type="text" id="login-id" class="login-input" placeholder="아이디 (영문/숫자)" autocomplete="off">
             <input type="password" id="login-pw" class="login-input" placeholder="비밀번호 (6자리 이상)" autocomplete="off">
             <div id="auth-error" class="auth-error"></div>
             <button class="btn-login" onclick="handleLogin()">로그인</button>
-            <button class="btn-signup" onclick="handleSignup()">새로 가입하기</button>
+            <!-- 💡 '새로 가입하기' 버튼은 삭제되었습니다. (관리자가 직접 생성) -->
         </div>
     </div>
 
@@ -320,20 +379,22 @@
                         <button class="btn-list-action" id="btn-play-learn" onclick="playAllInList('learn')">🎧 전체듣기</button>
                         
                         <!-- 슬라이딩 한/영 토글 -->
-                        <div class="lang-toggle-wrapper" onclick="toggleListLang()">
-                            <div class="lang-toggle-slider"></div>
-                            <div class="lang-option opt-eng">🇺🇸 영어</div>
-                            <div class="lang-option opt-kor active">🇰🇷 한글</div>
-                        </div>
-
-                        <button class="btn-burning" onclick="startBurningMode()">🔥 버닝모드</button>
+                            <div class="lang-toggle-wrapper" onclick="toggleListLang()">
+                                <div class="lang-toggle-slider"></div>
+                                <div class="lang-option opt-eng">🇺🇸 영어</div>
+                                <div class="lang-option opt-kor active">🇰🇷 한글</div>
+                            </div>
+                            <!-- 1. 버닝모드 버튼 -->
+                            <button class="btn-burning" onclick="startBurningMode()">🔥 버닝모드</button>
+                            <!-- 2. 버닝모드 우측으로 이동한 A4 PDF 다운로드 버튼 -->
+                            <button class="btn-list-action" style="background:#eef4ff; color:#1d4ed8; border:1px solid #4dabf7;" onclick="downloadJubsAsA4PDF()">📄PDF</button>
                     </div>
                 </div>
                 <div class="list-wrapper" id="learn-list-wrapper"></div>
             </div>
         </div>
 
-        <!-- 3. 줍줍(장바구니) 뷰 (챕터별 통합) -->
+        <!-- 3. 줍줍(장바구니) 뷰 -->
         <div id="view-basket" class="view-section">
             <div class="section-header"><h2>🧺 나의 줍줍 & 변형 문장</h2></div>
             <div class="schedule-info-box" style="margin-bottom: 16px;">
@@ -346,7 +407,7 @@
                     <tbody id="basket-table-body"></tbody>
                 </table>
             </div>
-            <!-- 리스트 컨테이너 (전체듣기 없음) -->
+            <!-- 리스트 컨테이너 -->
             <div id="basket-list-container" class="list-container">
                 <div class="list-header">
                     <h3 id="basket-list-title"></h3>
@@ -357,12 +418,20 @@
                             <div class="lang-option opt-eng">🇺🇸 영어</div>
                             <div class="lang-option opt-kor active">🇰🇷 한글</div>
                         </div>
+                        
+                        <!-- 1. 🍅 버닝모드 버튼이 먼저 오도록 배치 -->
                         <button class="btn-burning" onclick="startBurningMode()">🔥 버닝모드</button>
+                        
+                        <!-- 2. 📄 A4 다운로드 버튼이 그 우측(맨 끝)에 오도록 배치 -->
+                        <button class="btn-list-action" style="background:#eef4ff; color:#1d4ed8; border:1px solid #4dabf7;" onclick="downloadJubsAsA4PDF()">📄 PDF</button>
                     </div>
                 </div>
                 <div class="list-wrapper" id="basket-list-wrapper"></div>
             </div>
         </div>
+
+
+
 
         <!-- 4. 툭탁 학습 뷰 -->
         <div id="view-tuktak" class="view-section">
@@ -441,12 +510,12 @@
                 </div>
             </div>
         </div>
-        <!-- 🔥 하단 앱 관리 컨트롤 (id 추가) -->
+        <!-- 🔥 하단 앱 관리 컨트롤 -->
         <div class="bottom-controls" id="bottom-app-controls">
-            <button class="btn-bottom" onclick="resetAllData()">🔄 학습 데이터 리셋</button>
+            <!-- 👑 관리자(Raina) 전용 관리 버튼 -->
+            <button class="btn-bottom" id="admin-panel-btn" style="display:none; background:#eef4ff; color:#1d4ed8;" onclick="openAdminModal()">👑 회원 및 데이터 관리</button>
             <button class="btn-bottom btn-logout" onclick="signOut()">🚪 로그아웃</button>
         </div>
-
 
     </div>
 
@@ -583,20 +652,243 @@
         let currentUserUid = null;
         let userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {} };
 
+        let isAdmin = false;
+
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUserUid = user.uid;
+                
+                // 💡 [수정] 로그인한 계정이 'Raina'인지 정확하게 확인 (이메일 앞부분 또는 이메일 통째로 비교)
+                const userEmail = user.email || "";
+                const emailIdPart = userEmail.split('@')[0]; // 이메일의 @ 앞부분 추출
+                
+                // 소문자로 변환해서 비교하거나 'Raina' 정확히 일치 여부 확인
+                isAdmin = (emailIdPart === "Raina" || userEmail === "Raina" || emailIdPart.toLowerCase() === "raina");
+                
+                const adminBtn = document.getElementById('admin-panel-btn');
+                if (adminBtn) {
+                    adminBtn.style.display = isAdmin ? 'block' : 'none';
+                }
+
                 document.getElementById('login-content').style.display = 'none';
                 document.getElementById('login-spinner').style.display = 'block';
                 await loadUserDataFromFirebase();
                 document.getElementById('login-overlay').classList.remove('active');
             } else {
-                currentUserUid = null; userDB = { completedTasks: {}, jubs: [], cardStats: {} };
+                currentUserUid = null; isAdmin = false;
+                userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {} };
                 document.getElementById('login-spinner').style.display = 'none';
                 document.getElementById('login-content').style.display = 'flex';
                 document.getElementById('login-overlay').classList.add('active');
             }
         });
+
+        // =========================================================================
+        // 👑 관리자 전용 회원 관리 기능 (추가, 삭제, 선택 초기화)
+        // =========================================================================
+        async function openAdminModal() {
+            if (!isAdmin) return alert("관리자만 접근할 수 있습니다.");
+            document.getElementById('admin-modal').classList.add('active');
+            await renderAdminUserList();
+        }
+
+        function closeAdminModal() {
+            document.getElementById('admin-modal').classList.remove('active');
+        }
+
+        // 1. 관리자가 새 회원 아이디 생성하기
+        async function adminCreateUser() {
+            const idInput = document.getElementById('new-user-id').value.trim();
+            const pwInput = document.getElementById('new-user-pw').value.trim();
+            const errEl = document.getElementById('admin-create-error');
+            
+            if(!idInput || !pwInput) { errEl.innerText = "아이디와 비밀번호를 모두 입력해주세요."; return; }
+            if(pwInput.length < 6) { errEl.innerText = "비밀번호는 6자리 이상이어야 합니다."; return; }
+
+            const targetEmail = idInput.includes('@') ? idInput : idInput + "@study.com";
+            errEl.innerText = "생성 중...";
+
+            try {
+                const tempApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
+                const tempAuth = tempApp.auth();
+                const tempDb = tempApp.firestore();
+
+                const cred = await tempAuth.createUserWithEmailAndPassword(targetEmail, pwInput);
+                const newUid = cred.user.uid;
+
+                // 💡 [수정] 생성할 때 입력한 아이디(idInput)를 데이터베이스에 함께 저장합니다.
+                await tempDb.collection("studyUsers").doc(newUid).set({
+                    userId: idInput, // 아이디 저장
+                    completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {}, passwordChanged: false
+                });
+
+                await tempApp.delete();
+
+                errEl.innerText = "";
+                document.getElementById('new-user-id').value = "";
+                document.getElementById('new-user-pw').value = "";
+                alert(`'${idInput}' 회원이 성공적으로 생성되었습니다!`);
+                renderAdminUserList();
+            } catch (err) {
+                errEl.innerText = err.message;
+            }
+        }
+
+
+        // 2. 등록된 회원 목록 불러오기 (UID 대신 진짜 아이디를 스마트하게 추출)
+        // 👑 등록된 회원 목록 불러오기 (최근 로그인, 미션 진행/완료, 정밀 마감 기준 패널티 포함)
+        async function renderAdminUserList() {
+            const listContainer = document.getElementById('admin-user-list');
+            listContainer.innerHTML = '<div style="text-align:center; color:#868e96; padding:20px;">목록 불러오는 중...</div>';
+
+            try {
+                const snapshot = await db.collection("studyUsers").get();
+                listContainer.innerHTML = '';
+
+                if (snapshot.empty) {
+                    listContainer.innerHTML = '<div style="text-align:center; color:#868e96; padding:20px;">등록된 회원이 없습니다.</div>';
+                    return;
+                }
+
+                // 1. 현재 시뮬레이터 기준 날짜와 시간 확보
+                let simDateObj = new Date(simulatedDate);
+                simDateObj.setHours(12, 0, 0, 0);
+
+                snapshot.forEach(doc => {
+                    const uid = doc.id;
+                    const data = doc.data();
+                    
+                    // 2. 유저 아이디 스마트 추출
+                    let displayName = data.userId;
+                    if (!displayName && data.email) {
+                        displayName = data.email.split('@')[0];
+                    }
+                    if (!displayName) {
+                        displayName = uid === currentUserUid ? "Raina (관리자)" : `사용자 (${uid.substring(0, 6)})`;
+                    }
+
+                    // 3. 최근 로그인일 포맷팅
+                    let lastLoginStr = "기록 없음";
+                    if (data.lastLoginAt) {
+                        let d = new Date(data.lastLoginAt);
+                        lastLoginStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes()}`;
+                    }
+
+                    // 4. 미션 완료 수 계산
+                    const completedMap = data.completedTasks || {};
+                    const completedCount = Object.keys(completedMap).filter(k => completedMap[k] !== false).length;
+
+                    // 5. 정밀 마감 기준 (익일 새벽 2시) 패널티 카운팅 로직
+                    let totalAssignedMissions = 0;
+                    let totalPenalties = 0;
+
+                    for (let ch = 1; ch <= 12; ch++) {
+                        let chStr = ch < 10 ? '0'+ch : ''+ch;
+                        let chStartOffset = (ch - 1) * 2;
+
+                        Object.keys(taskOffsets).forEach(dayLabel => {
+                            let taskOffsetDays = taskOffsets[dayLabel];
+                            let reqStudyDayCount = chStartOffset + taskOffsetDays;
+                            
+                            // 해당 미션이 부여되는 날짜 계산 (2026-10-26 시작, 주말 제외)
+                            let missionDate = new Date("2026-10-26T12:00:00");
+                            let addedDays = 0;
+                            while (addedDays < reqStudyDayCount) {
+                                missionDate.setDate(missionDate.getDate() + 1);
+                                if (missionDate.getDay() !== 0 && missionDate.getDay() !== 6) addedDays++;
+                            }
+
+                            // 💡 과제 마감은 '미션 수행일의 다음 날 새벽 2시'
+                            let deadline = new Date(missionDate);
+                            deadline.setDate(deadline.getDate() + 1);
+                            deadline.setHours(2, 0, 0, 0); // 익일 02:00:00
+
+                            // 현재 시뮬레이터 시간이 마감 시한을 지났는지 확인
+                            if (simDateObj >= deadline) {
+                                totalAssignedMissions++;
+                                let taskId = `CH${chStr}-${dayLabel}`;
+                                
+                                // 마감 기한 내에 완료했는지 검사
+                                let isFinished = false;
+                                if (completedMap[taskId] && completedMap[taskId] !== false) {
+                                    let completedTime = new Date(completedMap[taskId]);
+                                    if (completedTime <= deadline) {
+                                        isFinished = true; // 마감 기한 내 완료 성공!
+                                    }
+                                }
+
+                                if (!isFinished) {
+                                    totalPenalties++; // 🚨 마감 지났는데 완료 안 함 -> 패널티 1 추가!
+                                }
+                            }
+                        });
+                    }
+                    
+                    let item = document.createElement('div');
+                    item.style.cssText = "background:#f1f3f5; padding:14px 16px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;";
+                    
+                    item.innerHTML = `
+                        <div style="flex:1; padding-right:10px;">
+                            <div style="font-weight:800; font-size:16px; color:#1e293b; display:flex; align-items:center; gap:6px;">
+                                <i class="fas fa-user-circle" style="color:#339af0; font-size:18px;"></i> ${displayName}
+                                <span style="font-size:11px; background:#e2e8f0; color:#475569; padding:2px 6px; border-radius:6px; font-weight:600;">최근 로그인: ${lastLoginStr}</span>
+                            </div>
+                            <div style="font-size:12px; color:#495057; margin-top:6px; display:flex; gap:10px; flex-wrap:wrap;">
+                                <span>🧺 줍줍: <b>${data.jubs ? data.jubs.length : 0}개</b></span>
+                                <span>🎯 미션 완료: <b style="color:#2b8a3e;">${completedCount}개</b></span>
+                                <span style="color:${totalPenalties > 0 ? '#e03131' : '#2b8a3e'};">⚠️ 누적 패널티: <b>${totalPenalties}회</b></span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:6px; flex-shrink:0;">
+                            <button style="padding:8px 12px; background:#f59f00; color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;" onclick="adminResetUser('${uid}')">초기화</button>
+                            <button style="padding:8px 12px; background:#fa5252; color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;" onclick="adminDeleteUser('${uid}')">삭제</button>
+                        </div>
+                    `;
+                    listContainer.appendChild(item);
+                });
+            } catch (err) {
+                listContainer.innerHTML = '<div style="text-align:center; color:#fa5252; padding:20px;">목록을 불러오는 중 권한 오류가 발생했습니다.</div>';
+            }
+        }
+
+
+        // 3. 특정 유저 데이터 선택 초기화
+        async function adminResetUser(uid) {
+            if(confirm("해당 유저의 모든 학습 진행률과 줍줍 데이터를 초기화하시겠습니까?")) {
+                const docRef = db.collection("studyUsers").doc(uid);
+                const docSnap = await docRef.get();
+                let currentPwState = docSnap.exists ? (docSnap.data().passwordChanged || false) : false;
+
+                await docRef.set({
+                    completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {}, passwordChanged: currentPwState
+                });
+                alert("선택한 유저의 데이터가 초기화되었습니다.");
+                renderAdminUserList();
+                if (uid === currentUserUid) loadUserDataFromFirebase();
+            }
+        }
+
+        // 4. 유저 삭제
+        async function adminDeleteUser(uid) {
+            if(uid === currentUserUid) {
+                alert("현재 로그인 중인 관리자 계정은 삭제할 수 없습니다.");
+                return;
+            }
+            if(confirm("정말 이 회원의 데이터를 완전히 삭제하시겠습니까?\n(주의: 인증 계정 자체는 파이어베이스 콘솔에서 별도 삭제가 필요할 수 있습니다.)")) {
+                await db.collection("studyUsers").doc(uid).delete();
+                alert("회원 데이터가 삭제되었습니다.");
+                renderAdminUserList();
+            }
+        }
+
+        // 기존 일반 리셋 버튼 함수는 관리자 전용 함수로 대체 또는 연동
+        function resetAllData() {
+            if (!isAdmin) {
+                alert("일반 사용자는 데이터를 초기화할 수 없습니다. 관리자에게 문의하세요.");
+                return;
+            }
+            openAdminModal();
+        }
 
         function getEmailFromId() {
             let id = document.getElementById('login-id').value.trim();
@@ -611,11 +903,7 @@
         }
 
         function handleSignup() {
-            const email = getEmailFromId(), pw = document.getElementById('login-pw').value.trim();
-            if(!email || !pw) return document.getElementById('auth-error').innerText = "모두 입력해주세요.";
-            if(pw.length < 6) return document.getElementById('auth-error').innerText = "비번은 6자리 이상.";
-            document.getElementById('auth-error').innerText = "가입 중...";
-            auth.createUserWithEmailAndPassword(email, pw).catch(err => { document.getElementById('auth-error').innerText = err.message; });
+            alert("회원가입 기능은 관리자에 의해서만 가능합니다. 관리자(Raina)에게 문의하세요.");
         }
 
         function signOut() { if(confirm("로그아웃 하시겠습니까?")) auth.signOut(); }
@@ -668,24 +956,23 @@
                     if(!userDB.cardStats) userDB.cardStats = {};
                     if(!userDB.cardMemos) userDB.cardMemos = {};
                 } else {
-                    // 신규 유저 생성 시
-                    userDB = { completedTasks: {}, jubs: [], cardStats: {}, passwordChanged: false };
-                    await db.collection("studyUsers").doc(currentUserUid).set(userDB);
+                    userDB = { completedTasks: {}, jubs: {}, cardStats: {}, cardMemos: {}, passwordChanged: false };
                 }
 
-                // 💡 [핵심 추가] 비밀번호 변경 이력이 없으면 팝업 띄우기
+                // 💡 [추가] 로그인 성공 시 현재 시스템 날짜 기준 최근 로그인 시간 업데이트
+                userDB.lastLoginAt = new Date().toISOString();
+                await saveDB();
+
                 if (userDB.passwordChanged !== true) {
                     document.getElementById('pw-change-modal').classList.add('active');
                 }
 
-            } catch (e) { 
-                console.error("데이터 로드 실패 (권한 만료 등):", e);
+            } catch (e) {  
+                console.error("데이터 로드 실패:", e);
             } finally {
-                // 🔥 데이터베이스 로드 성공/실패 여부와 상관없이 진입 화면을 무조건 그립니다!
                 updateDateDisplay(); 
             }
         }
-
 
 
         async function saveDB() {
@@ -2168,6 +2455,139 @@
             }
         }
 
+
+        // 💡 [신규] 스크롤 위치에 따라 🔝 버튼을 show/hide 하고 최상단으로 이동시키는 기능
+        window.onscroll = function() {
+            const btnTop = document.getElementById('btn-scroll-top');
+            if (btnTop) {
+                if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                    btnTop.style.display = 'flex';
+                } else {
+                    btnTop.style.display = 'none';
+                }
+            }
+        };
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+
+
+        // 📄 [최종 해결] 다운로드 권한 팝업 없이 새 창으로 A4 2열 문서를 열어 즉시 PDF 저장/인쇄하는 함수
+        function downloadJubsAsA4PDF() {
+            if (!userDB.jubs || userDB.jubs.length === 0) {
+                alert("다운로드할 줍줍 문장이 없습니다!");
+                return;
+            }
+
+            const titleText = document.getElementById('basket-list-title').innerText || "나만의 줍줍 문장";
+            
+            // 줍줍 데이터 기반 2열 테이블 행 생성
+            let tableRowsHtml = "";
+            userDB.jubs.forEach((item, idx) => {
+                tableRowsHtml += `
+                    <tr>
+                        <td class="num-col">${idx + 1}</td>
+                        <td class="eng-col">
+                            <div class="eng-text">${item.eng || ""}</div>
+                            ${item.ipa ? `<div class="ipa-text">${item.ipa}</div>` : ""}
+                            <div class="source-text">[출처: ${item.section || 'MS'}]</div>
+                        </td>
+                        <td class="kor-text">${item.kor || ""}</td>
+                    </tr>
+                `;
+            });
+
+            // A4 규격 2열 문서 HTML 생성
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html lang="ko">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Stack Up - ${titleText}</title>
+                    <style>
+                        body { font-family: 'Pretendard', -apple-system, sans-serif; padding: 30px; color: #212529; max-width: 900px; margin: 0 auto; background: #fff; }
+                        h1 { font-size: 22px; border-bottom: 2px solid #339af0; padding-bottom: 10px; margin-bottom: 20px; color: #1e293b; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 12px 14px; vertical-align: middle; }
+                        th { background: #f8f9fa; font-size: 13px; color: #495057; text-align: center; }
+                        .num-col { width: 40px; text-align: center; font-weight: bold; color: #64748b; font-size: 13px; background: #f8f9fa; }
+                        .eng-col { width: 50%; }
+                        .kor-text { width: 45%; font-weight: 700; color: #2b8a3e; font-size: 15px; }
+                        .eng-text { font-weight: 700; color: #1e293b; font-size: 15px; margin-bottom: 4px; }
+                        .ipa-text { color: #64748b; font-size: 12px; margin-bottom: 4px; font-style: italic; }
+                        .source-text { color: #adb5bd; font-size: 11px; }
+                        tr { page-break-inside: avoid; }
+                    </style>
+                </head>
+                <body>
+                    <h1>📄 Stack Up - ${titleText}</h1>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>🇺🇸 영어 / 발음기호</th>
+                                <th>🇰🇷 한글 뜻</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRowsHtml}
+                        </tbody>
+                    </table>
+                    <script>
+                        window.onload = function() {
+                            setTimeout(() => { window.print(); }, 300);
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `;
+
+            // 새 창(또는 새 탭)을 열어서 문서를 렌더링하고 곧바로 인쇄 창 호출
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+            } else {
+                alert("팝업 차단이 설정되어 있어 창을 열 수 없습니다. 팝업 차단을 해제해 주세요.");
+            }
+        }
+
     </script>
+
+<!-- 💡 우측 하단 플로팅 최상단 이동 버튼 (화살표 + TOP) -->
+    <button id="btn-scroll-top" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up" style="font-size:12px; margin-bottom:1px;"></i>
+        <span style="font-size:9px; letter-spacing:-0.5px;">TOP</span>
+    </button>
+
+
+<!-- 👑 [신규] 관리자 전용 회원 및 데이터 관리 모달 -->
+    <div class="modal-overlay" id="admin-modal">
+        <div class="edit-modal" style="width: 95%; max-width: 500px; text-align:left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin:0; font-size:18px; color:#1e293b;">👑 관리자 회원 관리</h3>
+                <button onclick="closeAdminModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color:#868e96;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <!-- 1. 새 회원 추가 섹션 (위아래 2행 구조로 변경) -->
+            <div style="background:#f8f9fa; padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid #e9ecef; display:flex; flex-direction:column; gap:10px;">
+                <div style="font-weight:800; font-size:14px; color:#1e293b;">➕ 새 회원 아이디 생성</div>
+                <input type="text" id="new-user-id" class="login-input" placeholder="아이디 (예: Koham)" style="padding:12px; font-size:14px;">
+                <input type="password" id="new-user-pw" class="login-input" placeholder="초기 비밀번호 (6자리 이상)" style="padding:12px; font-size:14px;">
+                <button style="width:100%; padding:12px; background:#2b8a3e; color:white; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:15px;" onclick="adminCreateUser()">회원 생성하기</button>
+                <div id="admin-create-error" style="color:#fa5252; font-size:12px; margin-top:2px;"></div>
+            </div>
+
+            <!-- 2. 등록된 회원 목록 및 관리 (초기화 및 삭제) -->
+            <div style="font-weight:800; font-size:14px; color:#1e293b; margin-bottom:8px;">👥 회원 목록 및 데이터 초기화/삭제</div>
+            <div id="admin-user-list" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                <!-- 자바스크립트로 동적 생성됨 -->
+            </div>
+        </div>
+    </div>
+
+
 </body>
 </html>
