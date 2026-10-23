@@ -221,7 +221,21 @@
         .chunk-span { padding: 2px 4px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
         .chunk-span:active { background: #e7f5ff; }
         
-        .ipa-text { font-size: 16px; color: #868e96; font-weight: 500; background: #f1f3f5; padding: 6px 14px; border-radius: 10px; margin-top: 4px; }
+        .ipa-text { 
+            font-size: 16px; 
+            color: #868e96; 
+            font-weight: 500; 
+            background: #f1f3f5; 
+            padding: 6px 14px; 
+            border-radius: 10px; 
+            margin-top: 4px; 
+            cursor: pointer; /* 손가락 모양 커서 */
+            transition: background 0.15s, color 0.15s;
+        }
+	.ipa-text:hover {
+            background: #e7f5ff;
+            color: #339af0;
+        }
         .eng-half:not(.revealed)::after { content: '💡 터치해서 영어 정답 확인'; color: #adb5bd; font-size: 15px; font-weight: 600; position: absolute; }
 
         /* 🔥 카드 내부 상단 버튼 그룹 (배경/그림자 최소화 및 배속 추가) */
@@ -305,7 +319,7 @@
 
     <!-- 🔴 [신규] 10월 25일까지 표시되는 얇은 테스트 모드 배너 -->
     <div id="test-mode-banner" style="display:none; position:fixed; top:0; left:0; width:100%; height:26px; background:#fa5252; color:white; font-size:12px; font-weight:800; text-align:center; line-height:26px; z-index:1001;">
-        ⚠️ 현재 테스트 모드 운영 중 (10월 25일까지 날짜 자유 이동 가능)
+        ⚠️ 현재 테스트 모드 운영 중 (10월 25일 데이터 초기화)
     </div>
 
 
@@ -487,7 +501,7 @@
 
                         <div class="eng-box">
                             <div class="text-content eng-text" id="tuktak-eng"></div>
-                            <div class="ipa-text" id="tuktak-ipa"></div>
+                            <div class="ipa-text" id="tuktak-ipa" onclick="playNativeAudio(event)"></div>
                         </div>
 
                         <!-- 💡 정답이 공개된 후 우측 하단에 나타날 이전/다음 화살표 버튼 -->
@@ -1385,11 +1399,14 @@
             if (player && !player.paused) { player.playbackRate = currentAudioSpeed; }
         }
 
+        let currentListTitle = ''; // 💡 현재 열린 리스트의 제목 저장용 (전체 vs 술술/버벅/막힘 구분)
+
         function showList(type, title, listIdx) {
-            currentListType = type; currentListIdx = listIdx;
+            currentListType = type; 
+            currentListIdx = listIdx;
+            currentListTitle = title; // 💡 제목 저장 (예: 'CH01 MS 전체', 'CH01 전체 - 술술' 등)
             const container = document.getElementById(type + '-list-container');
             
-            // 💡 [추가] 리스트가 나타날 때, 해당 탭의 표(Table)와 안내문구를 숨김 처리
             document.getElementById('learn-list-container').style.display = 'none';
             document.getElementById('basket-list-container').style.display = 'none';
             document.querySelectorAll(`#view-${type} .stats-table-wrapper`).forEach(el => el.style.display = 'none');
@@ -1397,7 +1414,6 @@
             
             container.style.display = 'block';
             
-            // 💡 [수정] 제목 영역에 뒤로 가기(←) 아이콘 추가
             document.getElementById(type + '-list-title').innerHTML = `
                 <span style="display:flex; align-items:center; gap:10px;">
                     <button onclick="hideList('${type}')" style="background:none; border:none; font-size:22px; color:#495057; cursor:pointer; padding:0; display:flex; align-items:center;">
@@ -1407,7 +1423,7 @@
                 </span>
             `;
             
-            isListEngFirst = false; // 기본 한->영
+            isListEngFirst = false; 
             document.querySelectorAll('.lang-toggle-wrapper').forEach(w => {
                 w.classList.remove('eng-first');
                 w.querySelector('.opt-eng').classList.remove('active');
@@ -1416,9 +1432,9 @@
             stopNativeAudio();
             renderListItems();
             
-            // 리스트가 열리면 자연스럽게 화면 최상단으로 스크롤 이동
             window.scrollTo({top: 0, behavior: 'smooth'}); 
         }
+
 
 
 
@@ -1648,9 +1664,20 @@ function startConfiguredPlayAll() {
 	function playNextInList() {
             if(!isPlayingAll) return;
             const btn = document.getElementById('btn-play-learn');
-            
+            const player = document.getElementById('native-audio-player');
+
+            // 1. 리스트 끝까지 재생했을 때 (전체 반복 체크)
             if(playAllIndex >= playAllList.length) {
+                if (selectedListenMode === 'listen') {
+                    currentRepeatCurrent++;
+                    if (currentRepeatCurrent < currentRepeatLimit) {
+                        playAllIndex = 0; 
+                        playAllTimer = setTimeout(playNextInList, 1000); // 1초 쉬고 다시 처음부터 시작
+                        return;
+                    }
+                }
                 isPlayingAll = false;
+                if (player) player.ontimeupdate = null;
                 if(btn) { btn.innerText = "🎧 전체듣기"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057"; }
                 return;
             }
@@ -1658,83 +1685,182 @@ function startConfiguredPlayAll() {
             let card = playAllList[playAllIndex];
             const listWrapper = document.getElementById('learn-list-wrapper');
             const items = listWrapper.children;
-            
-            if(items[playAllIndex]) {
-                items[playAllIndex].scrollIntoView({behavior: 'smooth', block: 'center'});
-                Array.from(items).forEach(el => { el.style.border = "1px solid #e9ecef"; el.style.boxShadow = "none"; });
-                items[playAllIndex].style.border = "2px solid #4dabf7";
-                items[playAllIndex].style.boxShadow = "0 4px 12px rgba(77,171,247,0.2)";
-            }
+
+            // 현재 문장 하이라이트 및 스크롤 이동 함수
+            const highlightItem = (idx) => {
+                if(items[idx]) {
+                    items[idx].scrollIntoView({behavior: 'smooth', block: 'center'});
+                    Array.from(items).forEach(el => { el.style.border = "1px solid #e9ecef"; el.style.boxShadow = "none"; });
+                    items[idx].style.border = "2px solid #4dabf7";
+                    items[idx].style.boxShadow = "0 4px 12px rgba(77,171,247,0.2)";
+                }
+            };
+
+            highlightItem(playAllIndex);
 
             if (card.audio && card.end > card.start) {
-                const player = document.getElementById('native-audio-player');
-                if (!player.src.endsWith(encodeURI(card.audio))) player.src = card.audio;
-                
-                player.playbackRate = currentAudioSpeed;
-                player.currentTime = card.start;
-                
-                // 💡 [핵심] 지정된 구간(end - start)의 길이를 밀리초로 정확히 계산
-                const durationMs = ((card.end - card.start) * 1000) / currentAudioSpeed;
-                
-                const playPromise = player.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => { 
-                        playAllTimer = setTimeout(() => { 
-                            player.pause(); 
-                            handleRepetitionOrShadowing(durationMs);
-                        }, durationMs); 
-                    }).catch(() => { playTTSForList(card.eng); });
+                // 💡 [핵심 판별]
+                // 1) 성취도별 발췌 리스트('술술', '버벅', '막힘')가 아닌 순수 '전체' 리스트인가?
+                const isFullList = currentListTitle.endsWith('전체');
+                // 2) UE가 아닌 순수 MS 또는 RC 본문 문장인가?
+                const isMsOrRc = card.badge && !card.badge.includes('UE') && (card.badge.startsWith('MS') || card.badge.startsWith('RC'));
+
+                // 🎧 [논스톱 재생]: 일반 듣기 모드 + 전체 리스트 + MS/RC 본문일 때만 원어민 호흡 그대로 논스톱 재생!
+                if (selectedListenMode === 'listen' && isFullList && isMsOrRc) {
+                    let blockEndIndex = playAllIndex;
+                    // 같은 배지(같은 MS 또는 같은 RC)이면서 같은 오디오 파일인 마지막 문장까지 묶기
+                    while (
+                        blockEndIndex + 1 < playAllList.length &&
+                        playAllList[blockEndIndex + 1].badge === card.badge &&
+                        playAllList[blockEndIndex + 1].audio === card.audio &&
+                        playAllList[blockEndIndex + 1].start >= playAllList[blockEndIndex].start
+                    ) {
+                        blockEndIndex++;
+                    }
+
+                    const startSec = card.start;
+                    const endSec = playAllList[blockEndIndex].end;
+
+                    const startContinuousPlay = () => {
+                        player.playbackRate = currentAudioSpeed;
+                        player.currentTime = startSec;
+
+                        player.ontimeupdate = () => {
+                            if (!isPlayingAll || selectedListenMode !== 'listen') {
+                                player.ontimeupdate = null;
+                                return;
+                            }
+                            const curTime = player.currentTime;
+
+                            // 오디오 진행 시간에 맞춰 현재 읽고 있는 문장으로 파란색 테두리 하이라이트 이동
+                            for (let i = playAllIndex; i <= blockEndIndex; i++) {
+                                if (curTime >= playAllList[i].start && curTime <= playAllList[i].end) {
+                                    if (playAllIndex !== i) {
+                                        playAllIndex = i;
+                                        highlightItem(playAllIndex);
+                                    }
+                                    break;
+                                }
+                            }
+
+                            // 해당 MS 또는 RC 파트의 마지막 문장이 끝나면 정지 후 다음 파트로 이동
+                            if (curTime >= endSec) {
+                                player.ontimeupdate = null;
+                                player.pause();
+                                playAllIndex = blockEndIndex + 1;
+                                playAllTimer = setTimeout(playNextInList, 800);
+                            }
+                        };
+
+                        player.play().catch(() => {
+                            player.ontimeupdate = null;
+                            playTTSForList(card.eng);
+                        });
+                    };
+
+                    if (!player.src.endsWith(encodeURI(card.audio))) {
+                        player.src = card.audio;
+                        player.load();
+                        player.oncanplay = () => {
+                            player.oncanplay = null;
+                            startContinuousPlay();
+                        };
+                    } else {
+                        startContinuousPlay();
+                    }
+                    return; // MS/RC 본문 논스톱 재생 처리 완료!
                 }
-            } else { playTTSForList(card.eng); }
+
+                // ✂️ [개별 문장 재생]: UE 문장, 성취도별 발췌 문장(술술/버벅/막힘), 또는 섀도잉 모드일 때
+                player.ontimeupdate = null; // 혹시 남아있을지 모를 연속 재생 이벤트 해제
+
+                const startSegmentPlay = () => {
+                    player.playbackRate = currentAudioSpeed;
+                    player.currentTime = card.start;
+                    const durationMs = ((card.end - card.start) * 1000) / currentAudioSpeed;
+
+                    const playPromise = player.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => { 
+                            playAllTimer = setTimeout(() => { 
+                                player.pause(); 
+                                handleRepetitionOrShadowing(durationMs);
+                            }, durationMs); 
+                        }).catch(() => { playTTSForList(card.eng); });
+                    }
+                };
+
+                if (!player.src.endsWith(encodeURI(card.audio))) {
+                    player.src = card.audio;
+                    player.load();
+                    player.oncanplay = () => {
+                        player.oncanplay = null;
+                        startSegmentPlay();
+                    };
+                } else {
+                    startSegmentPlay();
+                }
+            } else { 
+                playTTSForList(card.eng); 
+            }
         }
 
 
 
 	// 🗣️ 섀도잉 모드: 마지막 반복을 포함하여 '모든 회차마다' 재생 시간 + 3초 여유를 적용하는 함수
         function handleRepetitionOrShadowing(audioDurationMs) {
-            currentRepeatCurrent++;
-            
-            // 💡 섀도잉 모드라면 반복 회차와 상관없이 매번 문장 재생 시간 + 3초(3000ms) 여유를 줍니다.
-            let delayTime = 600; // 일반 듣기일 때의 반복 간격 (0.6초)
-            
-            if (selectedListenMode === 'shadow') {
-                delayTime = audioDurationMs + 3000; // 원본 재생 시간 + 3초 확실한 대기
-            }
-
-            if (currentRepeatCurrent < currentRepeatLimit) {
-                // 아직 설정된 반복 횟수가 남았으므로 같은 문장 다시 재생
-                playAllTimer = setTimeout(playNextInList, delayTime);
+            if (selectedListenMode === 'listen') {
+                // 🎧 일반 듣기 모드: 문장별 반복 없이 바로 다음 문장으로 넘어감 (리스트 끝에서 전체 반복)
+                playAllIndex++;
+                playAllTimer = setTimeout(playNextInList, 800);
             } else {
-                // 설정된 반복 횟수를 모두 채웠을 때 (마지막 회차 포함)
-                currentRepeatCurrent = 0; // 초기화
-                playAllIndex++; // 다음 문장으로 인덱스 이동
-                
-                // 💡 [핵심] 마지막 반복 회차가 끝날 때도 섀도잉 모드라면 3초 여유를 온전히 가진 뒤 다음 문장으로 넘어갑니다!
-                playAllTimer = setTimeout(playNextInList, delayTime);
+                // 🗣️ 섀도잉 모드: 각 문장마다 (재생 시간 + 3초 여유)를 가진 뒤 설정 횟수만큼 반복 후 다음 문장으로 이동
+                currentRepeatCurrent++;
+                let delayTime = audioDurationMs + 3000; 
+
+                if (currentRepeatCurrent < currentRepeatLimit) {
+                    playAllTimer = setTimeout(playNextInList, delayTime);
+                } else {
+                    currentRepeatCurrent = 0;
+                    playAllIndex++;
+                    playAllTimer = setTimeout(playNextInList, delayTime);
+                }
             }
         }
 
 
-function playTTSForList(text) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'en-US'; utter.rate = currentAudioSpeed * 0.95;
-        utter.onend = () => { 
-            if(!isPlayingAll) return; 
-            currentRepeatCurrent++;
-            if (currentRepeatCurrent < currentRepeatLimit) {
-                playAllTimer = setTimeout(() => { playTTSForList(text); }, 600);
-            } else {
-                currentRepeatCurrent = 0;
-                let extraDelay = (selectedListenMode === 'shadow') ? 3800 : 800;
-                playAllIndex++; 
-                playAllTimer = setTimeout(playNextInList, extraDelay); 
+
+	function playTTSForList(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = 'en-US'; utter.rate = currentAudioSpeed * 0.95;
+                utter.onend = () => { 
+                    if(!isPlayingAll) return; 
+                    
+                    if (selectedListenMode === 'listen') {
+                        // 🎧 일반 듣기 모드 (TTS)
+                        playAllIndex++;
+                        playAllTimer = setTimeout(playNextInList, 800);
+                    } else {
+                        // 🗣️ 섀도잉 모드 (TTS)
+                        currentRepeatCurrent++;
+                        let extraDelay = 3800; // 대략적 TTS 길이 + 3초
+                        if (currentRepeatCurrent < currentRepeatLimit) {
+                            playAllTimer = setTimeout(() => { playTTSForList(text); }, extraDelay);
+                        } else {
+                            currentRepeatCurrent = 0;
+                            playAllIndex++; 
+                            playAllTimer = setTimeout(playNextInList, extraDelay); 
+                        }
+                    }
+                };
+                window.speechSynthesis.speak(utter);
             }
-        };
-        window.speechSynthesis.speak(utter);
-    }
-}
+        }
+
+
+
 
         // =========================================================================
         // 📚 4. 툭탁 학습 엔진 (일일 미션 & 버닝모드 + 실제 녹음 기능)
@@ -2289,7 +2415,7 @@ function playTTSForList(text) {
         // 🎧 [완벽 통합] 재생 중인 모든 오디오(원어민, TTS, 내 녹음)를 확실하게 정지시키는 중앙 제어 함수
         function stopNativeAudio() {
             const player = document.getElementById('native-audio-player');
-            const userPlayer = document.getElementById('user-audio-player'); // 💡 내 녹음 플레이어 추가
+            const userPlayer = document.getElementById('user-audio-player');
 
             if (audioTimer) { clearTimeout(audioTimer); audioTimer = null; }
             if (playAllTimer) { clearTimeout(playAllTimer); playAllTimer = null; }
@@ -2297,11 +2423,12 @@ function playTTSForList(text) {
             if (player) { 
                 player.pause(); 
                 player.playbackRate = 1.0; 
-                player.oncanplay = null; // 대기 중이던 로딩 이벤트도 취소
+                player.oncanplay = null; 
+                player.ontimeupdate = null; // 💡 [추가] 논스톱 재생 중지 시 실시간 추적 해제
             }
             
             if (userPlayer) {
-                userPlayer.pause(); // 💡 재생 중이던 내 녹음도 즉시 정지
+                userPlayer.pause();
             }
 
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
