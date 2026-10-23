@@ -43,16 +43,16 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* 상단 네비게이션 탭 (3개) */
-        .nav-tabs { display: flex; background: white; position: fixed; top: 0; width: 100%; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .nav-tabs { display: flex; background: white; position: fixed; top: 0px; width: 100%; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.04); transition: top 0.2s; }
         .nav-tab { flex: 1; text-align: center; padding: 16px 0; font-size: 15px; font-weight: 700; color: #adb5bd; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; }
         .nav-tab.active { color: #2b8a3e; border-bottom: 3px solid #2b8a3e; }
 
         /* 시뮬레이터 */
-        .date-simulator { position: fixed; top: 53px; left: 0; width: 100%; background: #343a40; color: white; padding: 8px 12px; text-align: center; font-size: 13px; z-index: 99; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .date-simulator { position: fixed; top: 53px; left: 0; width: 100%; background: #343a40; color: white; padding: 8px 12px; text-align: center; font-size: 13px; z-index: 99; display: flex; justify-content: center; align-items: center; gap: 8px; transition: top 0.2s; }
         .date-simulator button { background: #4dabf7; border: none; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
 
         /* 컨테이너 */
-        .main-container { padding: 110px 20px 50px 20px; max-width: 600px; margin: 0 auto; }
+        .main-container { padding: 110px 20px 50px 20px; max-width: 600px; margin: 0 auto; transition: padding-top 0.2s; }
         .view-section { display: none; }
         .view-section.active { display: block; }
         body.tuktak-mode .nav-tabs, body.tuktak-mode .date-simulator { display: none !important; }
@@ -376,18 +376,15 @@
                 <div class="list-header">
                     <h3 id="learn-list-title"></h3>
                     <div class="list-controls">
-                        <button class="btn-list-action" id="btn-play-learn" onclick="playAllInList('learn')">🎧 전체듣기</button>
-                        
                         <!-- 슬라이딩 한/영 토글 -->
-                            <div class="lang-toggle-wrapper" onclick="toggleListLang()">
-                                <div class="lang-toggle-slider"></div>
-                                <div class="lang-option opt-eng">🇺🇸 영어</div>
-                                <div class="lang-option opt-kor active">🇰🇷 한글</div>
-                            </div>
-                            <!-- 1. 버닝모드 버튼 -->
-                            <button class="btn-burning" onclick="startBurningMode()">🔥 버닝모드</button>
-                            <!-- 2. 버닝모드 우측으로 이동한 A4 PDF 다운로드 버튼 -->
-                            <button class="btn-list-action" style="background:#eef4ff; color:#1d4ed8; border:1px solid #4dabf7;" onclick="downloadJubsAsA4PDF()">📄PDF</button>
+                        <div class="lang-toggle-wrapper" onclick="toggleListLang()">
+                            <div class="lang-toggle-slider"></div>
+                            <div class="lang-option opt-eng">🇺🇸 영어</div>
+                            <div class="lang-option opt-kor active">🇰🇷 한글</div>
+                        </div>
+                        
+                        <!-- 🔥 버닝모드 버튼 바로 우측에 아래처럼 추가해 주세요! -->
+                        <button class="btn-burning" onclick="startBurningMode()">🔥 버닝모드</button>
                     </div>
                 </div>
                 <div class="list-wrapper" id="learn-list-wrapper"></div>
@@ -419,11 +416,11 @@
                             <div class="lang-option opt-kor active">🇰🇷 한글</div>
                         </div>
                         
-                        <!-- 1. 🍅 버닝모드 버튼이 먼저 오도록 배치 -->
+                        <!-- 1. 🍅 버닝모드 버튼 -->
                         <button class="btn-burning" onclick="startBurningMode()">🔥 버닝모드</button>
                         
-                        <!-- 2. 📄 A4 다운로드 버튼이 그 우측(맨 끝)에 오도록 배치 -->
-                        <button class="btn-list-action" style="background:#eef4ff; color:#1d4ed8; border:1px solid #4dabf7;" onclick="downloadJubsAsA4PDF()">📄 PDF</button>
+                        <!-- 💡 2. [수정 완료] 여기에 id="pdf-download-btn"을 꼭 넣어주세요! -->
+                        <button id="pdf-download-btn" class="btn-list-action" style="background:#eef4ff; color:#1d4ed8; border:1px solid #4dabf7;" onclick="downloadJubsAsA4PDF()">📄 PDF</button>
                     </div>
                 </div>
                 <div class="list-wrapper" id="basket-list-wrapper"></div>
@@ -984,14 +981,59 @@
         // 📅 엔진 및 탭 전환
         // =========================================================================
         let simulatedDate = new Date("2026-10-26T12:00:00");
+
+        // 📅 시뮬레이터 날짜 갱신 및 '실제 시스템 날짜' 기준 테스트 모드 판별 엔진
         function updateDateDisplay() {
             document.getElementById('currentDateDisplay').innerText = `📅 ${simulatedDate.toLocaleDateString('ko-KR', {month:'numeric',day:'numeric',weekday:'short'})}`;
+            
+            // 💡 [핵심 수정] 사용자가 시뮬레이터 날짜를 조작하더라도, 판별은 '실제 현실의 시스템 날짜'를 기준으로 합니다.
+            const realToday = new Date(); // 실제 컴퓨터/모바일의 현재 날짜
+            const testEndDate = new Date("2026-10-25T23:59:59"); // 테스트 모드 마감 시한
+            const isTestPeriod = realToday <= testEndDate; // 실제 오늘이 10월 25일 이내인가?
+
+            const banner = document.getElementById('test-mode-banner');
+            if (banner) {
+                if (isTestPeriod) {
+                    banner.style.display = 'block';
+                    // 배너가 보일 때는 상단바들을 26px 아래로 내림
+                    document.querySelector('.nav-tabs').style.top = '26px';
+                    document.querySelector('.date-simulator').style.top = '79px';
+                    document.querySelector('.main-container').style.paddingTop = '136px';
+                } else {
+                    banner.style.display = 'none';
+                    // 배너가 사라지면 원래 위치로 복귀
+                    document.querySelector('.nav-tabs').style.top = '0px';
+                    document.querySelector('.date-simulator').style.top = '53px';
+                    document.querySelector('.main-container').style.paddingTop = '110px';
+                }
+            }
+
             if(document.getElementById('view-tracker').classList.contains('active')) renderTracker();
             if(document.getElementById('view-learn').classList.contains('active')) renderLearnTable();
             if(document.getElementById('view-basket').classList.contains('active')) renderBasketTable();
         }
-        function changeDate(days) { simulatedDate.setDate(simulatedDate.getDate() + days); updateDateDisplay(); }
-        function resetDate() { simulatedDate = new Date("2026-10-26T12:00:00"); updateDateDisplay(); }
+
+
+        // 💡 날짜 변경 버튼 제어 (테스트 기간 이후에는 관리자만 미래로 이동 가능)
+        function changeDate(days) {
+            const testEndDate = new Date("2026-10-25T23:59:59");
+            const isTestPeriod = simulatedDate <= testEndDate;
+
+            // 만약 테스트 기간이 끝났고 미래로(days > 0) 가려고 할 때, 관리자(Raina)가 아니라면 차단!
+            if (!isTestPeriod && days > 0 && !isAdmin) {
+                alert("정식 스터디 시작일(10/26) 이후에는 임의로 날짜를 넘길 수 없습니다!");
+                return;
+            }
+
+            simulatedDate.setDate(simulatedDate.getDate() + days);
+            updateDateDisplay();
+        }
+
+
+        function resetDate() { 
+            simulatedDate = new Date("2026-10-26T12:00:00"); 
+            updateDateDisplay(); 
+        }
 
         function getStudyDaysDiff(start, current) {
             let count = 0; let cur = new Date(start); cur.setHours(12,0,0,0);
@@ -1635,15 +1677,18 @@
             document.getElementById('view-tuktak').classList.add('active');
             document.body.classList.add('tuktak-mode');
             
-            // 💡 [추가] 단어 카드 학습 중일 때는 하단 리셋/로그아웃 버튼 숨기기
+            // 하단 리셋/로그아웃 버튼 숨기기
             const bottomControls = document.getElementById('bottom-app-controls');
             if (bottomControls) bottomControls.style.display = 'none';
+
+            // 💡 [추가] 학습 모드 중에는 A4 PDF 다운로드 버튼도 숨기기
+            const pdfBtn = document.getElementById('pdf-download-btn');
+            if (pdfBtn) pdfBtn.style.display = 'none';
 
             currentCardIndex = 0;
             warmupMicrophone(); 
             showCard();
         }
-
 
 
         function showCard() {
@@ -1983,9 +2028,13 @@
                 globalAudioStream = null;
             }
 
-            // 💡 [추가] 학습 화면을 빠져나올 때 하단 리셋/로그아웃 버튼 다시 보이게 복구
+            // 하단 리셋/로그아웃 버튼 복구
             const bottomControls = document.getElementById('bottom-app-controls');
             if (bottomControls) bottomControls.style.display = 'flex';
+
+            // 💡 [추가] 학습 모드를 나올 때 A4 PDF 다운로드 버튼 다시 복구
+            const pdfBtn = document.getElementById('pdf-download-btn');
+            if (pdfBtn) pdfBtn.style.display = 'inline-block';
 
             const activeTabIdx = Array.from(document.querySelectorAll('.nav-tab')).findIndex(t => t.classList.contains('active'));
             if(activeTabIdx === 0) switchView('tracker');
@@ -2586,6 +2635,13 @@
                 <!-- 자바스크립트로 동적 생성됨 -->
             </div>
         </div>
+    </div>
+
+
+
+   <!-- 🔴 [신규] 10월 25일까지 표시되는 얇은 테스트 모드 배너 -->
+    <div id="test-mode-banner" style="display:none; position:fixed; top:0; left:0; width:100%; height:26px; background:#fa5252; color:white; font-size:12px; font-weight:800; text-align:center; line-height:26px; z-index:1001;">
+        ⚠️ 현재 테스트 모드 운영 중 (10월 25일까지 날짜 자유 이동 가능)
     </div>
 
 
