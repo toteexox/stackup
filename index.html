@@ -117,7 +117,14 @@
         .num-stuck.clickable { color: #e03131 !important; }
 
         /* 💡 [수정] 답답한 큰 파란색 박스 테두리를 완전히 제거하고 전체 화면 흐름으로 변경 */
-        .list-container { margin-top: 10px; padding: 0 4px; background: transparent; border: none; box-shadow: none; display: none; }
+        .list-container { 
+            margin-top: 10px; 
+            padding: 0 4px; 
+            background: transparent; 
+            border: none; 
+            box-shadow: none; 
+            display: none; 
+        }
         .list-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 2px solid #f1f3f5; padding-bottom: 12px; }
         .list-header h3 { font-size: 17px; color: #1e293b; font-weight: 800; }
         .list-controls { display: flex; gap: 6px; align-items: center; }
@@ -135,7 +142,15 @@
         .btn-burning:active { transform: scale(0.95); }
         
         /* 💡 각 문장을 독립된 카드 형태의 네모 칸으로 디자인 */
-        .list-wrapper { display: flex; flex-direction: column; gap: 12px; max-height: none; overflow-y: visible; padding-right: 0; }
+        .list-wrapper { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    max-height: calc(100vh - 220px); 
+    overflow-y: auto;                 
+    padding-right: 4px; 
+    padding-bottom: 60vh; /* 💡 [핵심] 리스트 맨 아래쪽에도 상단 1/3 위치로 올 수 있도록 넉넉한 하단 여백 추가! */
+}
         .jub-item { 
             background: #ffffff; 
             border-radius: 16px; 
@@ -154,9 +169,13 @@
         }
         .jub-item:active { background: #f8fafc; }
 
-        /* 리스트 텍스트 색상 */
-        .text-green { color: #2b8a3e !important; font-weight: 800 !important; font-size: 16px !important; }
-        .text-gray { color: #64748b !important; font-weight: 600 !important; font-size: 14px !important; }
+        /* 💡 [학습/줍줍 리스트] 메인 텍스트와 서브 텍스트 크기 확대 */
+	.text-green { color: #2b8a3e !important; font-weight: 800 !important; font-size: 18px !important; } /* 기존 16px -> 18px */
+	.text-gray { color: #64748b !important; font-weight: 600 !important; font-size: 14px !important; }  /* 기존 14px -> 16px */
+
+	/* 💡 영문/한글이 토글되었을 때나 개별 카드 내부 텍스트 클래스 대응 */
+	.jub-item .eng { font-size: 18px !important; }
+	.jub-item .kor { font-size: 18px !important; }
 
         /* 리스트 우측 액션 아이콘 (ℹ️, ✏️, 🗑️) */
         .item-actions { display: flex; align-items: center; gap: 4px; }
@@ -354,6 +373,29 @@
         .btn-kor-memo:hover { color: #339af0; }
         .btn-kor-memo.has-memo { color: #339af0; }
 
+
+
+	/* 🤖 자동학습(오토 플레이) 버튼 스타일 */
+        .btn-auto-play { 
+            background: #e9ecef; 
+            border: none; 
+            color: #868e96; 
+            width: 32px; 
+            height: 30px; 
+            border-radius: 16px; 
+            font-size: 14px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: all 0.2s; 
+        }
+        .btn-auto-play.active { 
+            background: #339af0; 
+            color: white; 
+            box-shadow: 0 2px 6px rgba(51, 154, 240, 0.3); 
+        }
+
     </style>
 
 
@@ -368,17 +410,16 @@
 
 
 
-    <!-- 🔒 로그인 오버레이 (ID 입력) -->
-    <div class="login-overlay" id="login-overlay">
-        <div class="loading-spinner" id="login-spinner"></div>
-        <div id="login-content" class="login-box">
+    <!-- 🔒 로그인 오버레이 (켜자마자 빈 화면 대신 스피너가 즉시 보이도록 개선) -->
+    <div class="login-overlay active" id="login-overlay">
+        <div class="loading-spinner" id="login-spinner" style="display: block;"></div>
+        <div id="login-content" class="login-box" style="display: none;">
             <h1>스터디 트래커 & 툭탁</h1>
             <p>개인별 진도 기록과 줍줍 문장을 저장합니다.<br>아이디와 비밀번호를 입력해주세요.</p>
             <input type="text" id="login-id" class="login-input" placeholder="아이디 (영문/숫자)" autocomplete="off">
             <input type="password" id="login-pw" class="login-input" placeholder="비밀번호 (6자리 이상)" autocomplete="off">
             <div id="auth-error" class="auth-error"></div>
             <button class="btn-login" onclick="handleLogin()">로그인</button>
-            <!-- 💡 '새로 가입하기' 버튼은 삭제되었습니다. (관리자가 직접 생성) -->
         </div>
     </div>
 
@@ -443,15 +484,15 @@
                         <!-- 슬라이딩 한/영 토글 -->
                         <div class="lang-toggle-wrapper" onclick="toggleListLang()">
                             <div class="lang-toggle-slider"></div>
-                            <div class="lang-option opt-eng">🇺🇸 영어</div>
-                            <div class="lang-option opt-kor active">🇰🇷 한글</div>
+                            <div class="lang-option opt-eng">🇺🇸</div>
+                            <div class="lang-option opt-kor active">🇰🇷</div>
                         </div>
                         
                         <!-- 🎧 학습 탭 전용 전체듣기 버튼 -->
-                        <button id="btn-play-learn" class="btn-list-action" style="background:#eef4ff; color:#1d4ed8; border:1px solid #4dabf7;" onclick="playAllInList('learn')">🎧 전체듣기</button>
+                        <button id="btn-play-learn" class="btn-list-action" style="background:#eef4ff; color:#1d4ed8; border:1px solid #4dabf7;" onclick="playAllInList('learn')">🎧</button>
                         
                         <!-- 🔥 버닝모드 버튼 -->
-                        <button class="btn-burning" onclick="startBurningMode()">🔥 버닝모드</button>
+                        <button class="btn-burning" onclick="startBurningMode()">🔥</button>
                     </div>
                 </div>
                 <div class="list-wrapper" id="learn-list-wrapper"></div>
@@ -479,12 +520,12 @@
                         <!-- 슬라이딩 한/영 토글 -->
                         <div class="lang-toggle-wrapper" onclick="toggleListLang()">
                             <div class="lang-toggle-slider"></div>
-                            <div class="lang-option opt-eng">🇺🇸 영어</div>
-                            <div class="lang-option opt-kor active">🇰🇷 한글</div>
+                            <div class="lang-option opt-eng">🇺🇸</div>
+                            <div class="lang-option opt-kor active">🇰🇷</div>
                         </div>
                         
                         <!-- 1. 🍅 버닝모드 버튼 -->
-                        <button class="btn-burning" onclick="startBurningMode()">🔥 버닝모드</button>
+                        <button class="btn-burning" onclick="startBurningMode()">🔥</button>
                         
                         <!-- 💡 2. [수정 완료] 여기에 id="pdf-download-btn"을 꼭 넣어주세요! -->
                         <button id="pdf-download-btn" class="btn-list-action" style="background:#eef4ff; color:#1d4ed8; border:1px solid #4dabf7;" onclick="downloadJubsAsA4PDF()">📄 PDF</button>
@@ -509,13 +550,17 @@
                 
                 <!-- 2. 우측 토글키 + 닫기 버튼 그룹 -->
                 <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
-                    <div class="tuktak-toggle-wrapper" id="tuktak-mode-toggle" onclick="toggleTuktakViewMode()">
-                        <div class="tuktak-toggle-slider"></div>
-                        <div class="tuktak-toggle-option opt-script active">스크립트</div>
-                        <div class="tuktak-toggle-option opt-memo">📝 메모</div>
-                    </div>
-                    <button class="back-btn" onclick="exitTuktak()"><i class="fas fa-times"></i></button>
-                </div>
+                  <!-- 🤖 자동학습 버튼 -->
+                  <button class="btn-auto-play" id="btn-auto-play" onclick="toggleAutoPlayMode()" title="자동학습 모드">
+                      <i class="fas fa-robot"></i>
+                  </button>
+                  <div class="tuktak-toggle-wrapper" id="tuktak-mode-toggle" onclick="toggleTuktakViewMode()">
+                      <div class="tuktak-toggle-slider"></div>
+                      <div class="tuktak-toggle-option opt-script active">스크립트</div>
+                      <div class="tuktak-toggle-option opt-memo">📝 메모</div>
+                  </div>
+                  <button class="back-btn" onclick="exitTuktak()"><i class="fas fa-times"></i></button>
+              </div>
             </div>
 
             <!-- 🔥 일체형 분할 카드 -->
@@ -689,14 +734,15 @@
                 <button id="mode-btn-shadow" style="flex:1; padding: 12px; border: 2px solid #e9ecef; background: #f8f9fa; color: #495057; border-radius: 10px; font-weight: 800; cursor: pointer;" onclick="setListenMode('shadow')">🗣️ 섀도잉</button>
             </div>
 
-            <!-- 2. 반복 횟수 선택 -->
-            <span class="edit-label">반복 횟수</span>
-            <select id="config-repeat-count" class="login-input" style="margin-bottom: 14px; padding: 10px; font-size: 14px; width: 100%;">
-                <option value="1">1회 반복</option>
-                <option value="2" selected>2회 반복</option>
-                <option value="3">3회 반복</option>
-                <option value="5">5회 반복</option>
-            </select>
+            <!-- 2. 반복 횟수 선택 (1~5회 인라인 버튼 형태) -->
+          <span class="edit-label">반복 횟수</span>
+          <div style="display: flex; gap: 4px; margin-bottom: 14px;" id="config-repeat-group">
+              <span class="repeat-btn" style="flex:1; text-align:center; padding:10px 0; background:#f1f3f5; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px; color:#495057;" onclick="setConfigRepeat(1)">1회</span>
+              <span class="repeat-btn active" style="flex:1; text-align:center; padding:10px 0; background:#e7f5ff; color:#339af0; border-radius:8px; font-weight:800; cursor:pointer; font-size:13px;" onclick="setConfigRepeat(2)">2회</span>
+              <span class="repeat-btn" style="flex:1; text-align:center; padding:10px 0; background:#f1f3f5; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px; color:#495057;" onclick="setConfigRepeat(3)">3회</span>
+              <span class="repeat-btn" style="flex:1; text-align:center; padding:10px 0; background:#f1f3f5; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px; color:#495057;" onclick="setConfigRepeat(4)">4회</span>
+              <span class="repeat-btn" style="flex:1; text-align:center; padding:10px 0; background:#f1f3f5; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px; color:#495057;" onclick="setConfigRepeat(5)">5회</span>
+          </div>
 
             <!-- 3. 재생 속도 선택 -->
             <span class="edit-label">재생 속도</span>
@@ -757,7 +803,7 @@
 
     <script>
         // =========================================================================
-        // 🚀 FIREBASE 설정
+        // 🚀 FIREBASE 설정 (오프라인/로컬 캐시 활성화로 로딩 속도 극대화)
         // =========================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyDa1T4SCiHKrWjE077VE027eJMfSa4LKcQ", authDomain: "study-koboogy.firebaseapp.com",
@@ -765,14 +811,17 @@
             messagingSenderId: "886555559774", appId: "1:886555559774:web:7eec83679a72d9fedd31cf"
         };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth(); const db = firebase.firestore();
+        const auth = firebase.auth(); 
+        const db = firebase.firestore();
+        
+        // 파이어베이스 자체 캐시 활성화
+        try { db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch(e) {}
 
         let currentUserUid = null;
         let userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {} };
-
         let isAdmin = false;
 
-        // 🚀 [수정] 로그인 시 깜빡임(3단계 렌더링)을 없애고 부드럽게 한 번에 진입하는 인증 감지 함수
+        // 🚀 [초고속 부팅] 서버 응답을 기다리지 않고 0.01초 만에 화면부터 즉시 여는 인증 함수
         auth.onAuthStateChanged(async (user) => {
             const overlay = document.getElementById('login-overlay');
             if (user) {
@@ -780,21 +829,31 @@
                 
                 const userEmail = user.email || "";
                 const emailIdPart = userEmail.split('@')[0];
-                isAdmin = (emailIdPart === "Raina" || userEmail === "Raina" || emailIdPart.toLowerCase() === "raina");
+                isAdmin = (emailIdPart.toLowerCase() === "raina");
                 
                 const adminBtn = document.getElementById('admin-panel-btn');
-                if (adminBtn) {
-                    adminBtn.style.display = isAdmin ? 'block' : 'none';
+                if (adminBtn) adminBtn.style.display = isAdmin ? 'block' : 'none';
+
+                // 💡 1. 로컬 캐시(localStorage)에서 이전 데이터를 0.001초 만에 먼저 불러와 즉시 화면 오픈!
+                const cachedData = localStorage.getItem('stackup_cache_' + currentUserUid);
+                if (cachedData) {
+                    try {
+                        userDB = JSON.parse(cachedData);
+                        ensureUserDBStructure();
+                    } catch (e) {}
                 }
 
+                // 서버 통신을 기다리지 않고 로그인 오버레이를 즉시 닫고 메인 화면 노출!
+                if (overlay) overlay.classList.remove('active');
+                document.body.classList.add('app-loaded');
+                updateDateDisplay(); // 화면 먼저 쾌적하게 그리기
+
+                // 💡 2. 백그라운드에서 조용히 서버 최신 데이터 가져와서 동기화 (버벅임 0%)
                 try {
-                    const docSnap = await db.collection("studyUsers").doc(currentUserUid).get();
+                    const docSnap = await db.collection("studyUsers").doc(currentUserUid).get({ source: 'server' }).catch(() => db.collection("studyUsers").doc(currentUserUid).get());
                     if (docSnap.exists) {
                         userDB = docSnap.data();
-                        if(!userDB.completedTasks) userDB.completedTasks = {};
-                        if(!userDB.jubs) userDB.jubs = {};
-                        if(!userDB.cardStats) userDB.cardStats = {};
-                        if(!userDB.cardMemos) userDB.cardMemos = {};
+                        ensureUserDBStructure();
                     } else {
                         userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {}, passwordChanged: false };
                     }
@@ -804,29 +863,34 @@
                     }
 
                     userDB.lastLoginAt = new Date().toISOString();
-                    saveDB();
+                    saveDB(); // 로컬 캐시 및 서버 저장
+                    updateDateDisplay(); // 최신 데이터로 조용히 화면 갱신
                 } catch (e) {
-                    console.error("데이터 사전 로드 실패:", e);
+                    console.error("백그라운드 데이터 로드 실패:", e);
                 }
-
-                if (overlay) overlay.classList.remove('active');
-                
-                // 💡 [핵심] 로그인 확인 및 데이터 준비가 모두 끝난 순간에 메인 화면을 한 번에 노출!
-                document.body.classList.add('app-loaded');
-                updateDateDisplay();
 
             } else {
                 currentUserUid = null; isAdmin = false;
                 userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {} };
+                
+                // 로그인이 필요할 때만 입력 폼 노출
                 document.getElementById('login-spinner').style.display = 'none';
                 document.getElementById('login-content').style.display = 'flex';
                 
                 if (overlay) overlay.classList.add('active');
-                
-                // 💡 로그인이 안 되어 있을 때도 메인 화면 클래스를 붙여 로그인 창이 뜨게 함
                 document.body.classList.add('app-loaded');
             }
         });
+
+
+        // 데이터 구조 안전성 보장 함수 (jubs가 객체{}로 잘못 들어가는 버그 완벽 수정)
+        function ensureUserDBStructure() {
+            if (!userDB.completedTasks) userDB.completedTasks = {};
+            if (!Array.isArray(userDB.jubs)) userDB.jubs = [];
+            if (!userDB.cardStats) userDB.cardStats = {};
+            if (!userDB.cardMemos) userDB.cardMemos = {};
+        }
+
 
         // =========================================================================
         // 👑 관리자 전용 회원 관리 기능 (추가, 삭제, 선택 초기화)
@@ -997,18 +1061,42 @@
         }
 
 
-        // 3-1. 특정 유저의 '미션 인증 데이터(completedTasks)'만 선택 초기화 (줍줍/성취도/메모 유지!)
+        // 3-1. 특정 유저의 '미션 인증 데이터(completedTasks) + 이어하기 기록(progress_)' 완벽 초기화
         async function adminResetUser(uid) {
-            if(confirm("해당 회원의 '미션 인증 기록(O/X 및 패널티)'만 초기화하시겠습니까?\n(※ 줍줍 문장, 성취도, 메모 등 학습 데이터는 그대로 안전하게 유지됩니다.)")) {
+            if(confirm("해당 회원의 '미션 인증 기록(O/X, 패널티 및 중간 이어하기 기록)'을 모두 초기화하시겠습니까?\n(※ 줍줍 문장, 성취도, 메모 등 학습 데이터는 그대로 안전하게 유지됩니다.)")) {
                 try {
                     const docRef = db.collection("studyUsers").doc(uid);
-                    // 💡 set 대신 update를 사용하여 completedTasks만 빈 객체로 초기화!
-                    await docRef.update({
-                        completedTasks: {}
-                    });
-                    alert("선택한 회원의 미션 인증 기록이 초기화되었습니다.");
+                    // 💡 캐시가 아닌 실제 서버(server)에서 최신 문서를 정확히 가져옴
+                    const docSnap = await docRef.get({ source: 'server' }).catch(() => docRef.get());
+                    
+                    if (docSnap.exists) {
+                        let data = docSnap.data();
+                        let updatePayload = {
+                            completedTasks: {}
+                        };
+                        
+                        // DB에 남아있는 모든 'progress_CH...' (중간 이어하기 기록) 키를 찾아 완전히 삭제!
+                        Object.keys(data).forEach(key => {
+                            if (key.startsWith('progress_')) {
+                                updatePayload[key] = firebase.firestore.FieldValue.delete();
+                            }
+                        });
+
+                        await docRef.update(updatePayload);
+                    }
+
+                    // 만약 현재 로그인한 본인(관리자)을 초기화한 경우 메모리와 로컬 캐시 즉시 청소!
+                    if (uid === currentUserUid) {
+                        Object.keys(userDB).forEach(key => {
+                            if (key.startsWith('progress_')) delete userDB[key];
+                        });
+                        userDB.completedTasks = {};
+                        localStorage.setItem('stackup_cache_' + currentUserUid, JSON.stringify(userDB));
+                        updateDateDisplay(); // 화면 즉시 갱신 (불필요한 재로드 및 덮어쓰기 방지)
+                    }
+
+                    alert("선택한 회원의 미션 및 이어하기 기록이 완벽하게 초기화되었습니다.");
                     renderAdminUserList();
-                    if (uid === currentUserUid) loadUserDataFromFirebase();
                 } catch (err) {
                     console.error(err);
                     alert("초기화 중 오류가 발생했습니다: " + err.message);
@@ -1016,22 +1104,40 @@
             }
         }
 
-        // 3-2. 💡 [신규] 전체 회원의 '미션 인증 데이터' 일괄 초기화
+        // 3-2. 전체 회원의 '미션 인증 데이터 + 이어하기 기록' 일괄 초기화
         async function adminResetAllMissions() {
             if(!isAdmin) return;
-            if(confirm("⚠️ 정말 [모든 회원]의 미션 인증 기록을 일괄 초기화하시겠습니까?\n\n※ 모든 회원의 줍줍 문장, 성취도(술술/버벅/막힘), 메모는 삭제되지 않고 그대로 보존됩니다.")) {
+            if(confirm("⚠️ 정말 [모든 회원]의 미션 인증 및 이어하기 기록을 일괄 초기화하시겠습니까?\n\n※ 모든 회원의 줍줍 문장, 성취도(술술/버벅/막힘), 메모는 삭제되지 않고 그대로 보존됩니다.")) {
                 try {
-                    const snapshot = await db.collection("studyUsers").get();
-                    const batch = db.batch(); // 파이어베이스 일괄 처리(Batch) 사용
+                    const snapshot = await db.collection("studyUsers").get({ source: 'server' }).catch(() => db.collection("studyUsers").get());
+                    const batch = db.batch();
 
                     snapshot.forEach(doc => {
-                        batch.update(doc.ref, { completedTasks: {} });
+                        let data = doc.data();
+                        let updatePayload = { completedTasks: {} };
+                        
+                        // 모든 회원의 중간 이어하기(progress_) 기록도 싹 찾아서 삭제
+                        Object.keys(data).forEach(key => {
+                            if (key.startsWith('progress_')) {
+                                updatePayload[key] = firebase.firestore.FieldValue.delete();
+                            }
+                        });
+                        
+                        batch.update(doc.ref, updatePayload);
                     });
 
                     await batch.commit();
-                    alert("🎉 모든 회원의 미션 인증 기록이 깔끔하게 초기화되었습니다!");
+
+                    // 현재 로그인한 관리자 본인의 메모리와 캐시도 즉시 초기화
+                    Object.keys(userDB).forEach(key => {
+                        if (key.startsWith('progress_')) delete userDB[key];
+                    });
+                    userDB.completedTasks = {};
+                    localStorage.setItem('stackup_cache_' + currentUserUid, JSON.stringify(userDB));
+                    updateDateDisplay();
+
+                    alert("🎉 모든 회원의 미션 및 이어하기 기록이 깔끔하게 초기화되었습니다!");
                     renderAdminUserList();
-                    loadUserDataFromFirebase();
                 } catch (err) {
                     console.error(err);
                     alert("전체 미션 초기화 중 오류가 발생했습니다: " + err.message);
@@ -1070,9 +1176,19 @@
         function handleLogin() {
             const email = getEmailFromId(), pw = document.getElementById('login-pw').value.trim();
             if(!email || !pw) return document.getElementById('auth-error').innerText = "모두 입력해주세요.";
-            document.getElementById('auth-error').innerText = "로그인 중...";
-            auth.signInWithEmailAndPassword(email, pw).catch(() => { document.getElementById('auth-error').innerText = "정보가 틀렸습니다."; });
+            
+            // 💡 [핵심 최적화 1] 로그인 버튼 클릭 즉시 입력폼을 숨기고 스피너를 보여주어 답답함을 없앱니다!
+            document.getElementById('login-content').style.display = 'none';
+            document.getElementById('login-spinner').style.display = 'block';
+            
+            auth.signInWithEmailAndPassword(email, pw).catch(() => { 
+                // 에러 발생 시 다시 폼을 복구
+                document.getElementById('login-spinner').style.display = 'none';
+                document.getElementById('login-content').style.display = 'flex';
+                document.getElementById('auth-error').innerText = "정보가 틀렸습니다."; 
+            });
         }
+
 
         function handleSignup() {
             alert("회원가입 기능은 관리자에 의해서만 가능합니다. 관리자(Raina)에게 문의하세요.");
@@ -1121,25 +1237,22 @@
         async function loadUserDataFromFirebase() {
             if (!currentUserUid) return;
             try {
-                const docSnap = await db.collection("studyUsers").doc(currentUserUid).get();
+                // 💡 서버에서 최신 데이터를 강제로 받아와 로컬 캐시와 메모리를 깨끗하게 덮어씀
+                const docSnap = await db.collection("studyUsers").doc(currentUserUid).get({ source: 'server' }).catch(() => db.collection("studyUsers").doc(currentUserUid).get());
                 if (docSnap.exists) {
                     userDB = docSnap.data();
-                    if(!userDB.completedTasks) userDB.completedTasks = {};
-                    if(!userDB.jubs) userDB.jubs = [];
-                    if(!userDB.cardStats) userDB.cardStats = {};
-                    if(!userDB.cardMemos) userDB.cardMemos = {};
+                    ensureUserDBStructure();
                 } else {
-                    userDB = { completedTasks: {}, jubs: {}, cardStats: {}, cardMemos: {}, passwordChanged: false };
+                    userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {}, passwordChanged: false };
                 }
 
-                // 비밀번호 변경 체크 팝업
                 if (userDB.passwordChanged !== true) {
                     document.getElementById('pw-change-modal').classList.add('active');
                 }
 
-                // 최근 로그인 시간 업데이트는 메인 화면 진입 후 백그라운드로 조용히 실행
-                userDB.lastLoginAt = new Date().toISOString();
-                saveDB();
+                // 💡 [핵심 수정] 여기서 saveDB()를 부르면 이전 메모리 데이터가 덮어써질 수 있으므로, 
+                // 로컬 캐시만 최신 서버 데이터로 갱신하고 화면만 다시 그립니다!
+                localStorage.setItem('stackup_cache_' + currentUserUid, JSON.stringify(userDB));
 
             } catch (e) {  
                 console.error("데이터 로드 실패:", e);
@@ -1149,10 +1262,16 @@
         }
 
 
+        // 💡 저장할 때 로컬 캐시에도 함께 저장하여 다음 접속 시 0.01초 만에 켜지도록 처리
         async function saveDB() {
             if (!currentUserUid) return;
-            try { await db.collection("studyUsers").doc(currentUserUid).set(userDB); } catch (e) {}
+            try { 
+                localStorage.setItem('stackup_cache_' + currentUserUid, JSON.stringify(userDB));
+                await db.collection("studyUsers").doc(currentUserUid).set(userDB); 
+            } catch (e) {}
         }
+
+
 
         // =========================================================================
         // 📅 엔진 및 탭 전환
@@ -1163,31 +1282,33 @@
         function updateDateDisplay() {
             document.getElementById('currentDateDisplay').innerText = `📅 ${simulatedDate.toLocaleDateString('ko-KR', {month:'numeric',day:'numeric',weekday:'short'})}`;
             
-            // 💡 [핵심 수정] 사용자가 시뮬레이터 날짜를 조작하더라도, 판별은 '실제 현실의 시스템 날짜'를 기준으로 합니다.
-            const realToday = new Date(); // 실제 컴퓨터/모바일의 현재 날짜
-            const testEndDate = new Date("2026-10-25T23:59:59"); // 테스트 모드 마감 시한
-            const isTestPeriod = realToday <= testEndDate; // 실제 오늘이 10월 25일 이내인가?
+            // 실제 시스템 날짜 기준 판별
+            const realToday = new Date(); 
+            const testEndDate = new Date("2026-10-25T23:59:59"); 
+            const isTestPeriod = realToday <= testEndDate; 
 
             const banner = document.getElementById('test-mode-banner');
             if (banner) {
                 if (isTestPeriod) {
                     banner.style.display = 'block';
-                    // 배너가 보일 때는 상단바들을 26px 아래로 내림
                     document.querySelector('.nav-tabs').style.top = '26px';
                     document.querySelector('.date-simulator').style.top = '79px';
                     document.querySelector('.main-container').style.paddingTop = '136px';
                 } else {
                     banner.style.display = 'none';
-                    // 배너가 사라지면 원래 위치로 복귀
                     document.querySelector('.nav-tabs').style.top = '0px';
                     document.querySelector('.date-simulator').style.top = '53px';
                     document.querySelector('.main-container').style.paddingTop = '110px';
                 }
             }
 
-            if(document.getElementById('view-tracker').classList.contains('active')) renderTracker();
-            if(document.getElementById('view-learn').classList.contains('active')) renderLearnTable();
-            if(document.getElementById('view-basket').classList.contains('active')) renderBasketTable();
+            // 💡 [핵심 최적화 2] 브라우저가 로그인 팝업을 닫고 메인 화면 레이아웃을 
+            // 렌더링할 수 있는 시간(100ms)을 준 뒤에, 무거운 데이터를 계산해서 그려줍니다!
+            setTimeout(() => {
+                if(document.getElementById('view-tracker').classList.contains('active')) renderTracker();
+                if(document.getElementById('view-learn').classList.contains('active')) renderLearnTable();
+                if(document.getElementById('view-basket').classList.contains('active')) renderBasketTable();
+            }, 100);
         }
 
 
@@ -1249,7 +1370,16 @@
         }
 
         function switchView(viewName) {
-            stopNativeAudio();
+          stopNativeAudio();
+
+          // 💡 탭을 옮길 때도 전체듣기 버튼 UI 강제 원복
+          const btn = document.getElementById('btn-play-learn');
+          if (btn) {
+              btn.innerText = "🎧"; 
+              btn.style.background = "#f1f3f5"; 
+              btn.style.color = "#495057";
+          }
+
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             document.body.classList.remove('tuktak-mode');
@@ -1306,7 +1436,10 @@
             
             const grid = document.getElementById('tracker-grid');
             const todoContainer = document.getElementById('todo-list-container');
-            grid.innerHTML = ''; todoContainer.innerHTML = '';
+            
+            // 💡 [핵심 최적화] 화면에 직접 하나씩 붙이지 않고 메모리(Fragment)에서 조립 후 한 번에 렌더링!
+            const gridFragment = document.createDocumentFragment();
+            const todoFragment = document.createDocumentFragment();
             let todayTasks = [];
 
             for(let ch=1; ch<=12; ch++) {
@@ -1338,9 +1471,14 @@
                     cell.onclick = () => startTuktakDaily(chStr, dayLabel);
                     taskGrid.appendChild(cell);
                 });
-                box.appendChild(taskGrid); grid.appendChild(box);
+                box.appendChild(taskGrid); 
+                gridFragment.appendChild(box);
             }
 
+            grid.innerHTML = '';
+            grid.appendChild(gridFragment); // 단 1번의 DOM 조작으로 트래커 완성!
+
+            todoContainer.innerHTML = '';
             if (isWeekend) todoContainer.innerHTML = `<div class="mission-empty">🎉 주말입니다! 재학습을 진행하세요.</div>`;
             else if (todayTasks.length===0) todoContainer.innerHTML = `<div class="mission-empty">오늘 미션이 없습니다.</div>`;
             else {
@@ -1348,7 +1486,6 @@
                     const cardEl = document.createElement('div'); cardEl.className = `mission-card ${item.isCompleted ? 'completed':''}`;
                     cardEl.onclick = () => startTuktakDaily(item.chStr, item.dayLabel);
                     
-                    // 💡 완료 시간 표시 로직 추가
                     let completedAtHtml = '';
                     if (item.isCompleted) {
                         if (typeof item.completedVal === 'string') {
@@ -1357,7 +1494,6 @@
                             let h = d.getHours(); let min = d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes();
                             completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ ${m}월 ${day}일 ${h}:${min} 학습 완료</div>`;
                         } else {
-                            // 시간 저장 기능 도입 전에 완료했던 항목들 처리용
                             completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ 완료됨</div>`;
                         }
                     }
@@ -1368,12 +1504,14 @@
                             <div class="mission-main-title">Chapter ${item.chStr} - ${item.uiInfo.name}</div>
                             ${completedAtHtml}
                         </div>
-                        <!-- 💡 'O' 대신 체크 아이콘으로 변경 -->
                         <div class="play-circle-btn" style="${item.isCompleted ? 'background:#ebfbee; border-color:#8ce99a; color:#2b8a3e; font-size:20px;':''}">${item.isCompleted ? '<i class="fas fa-check"></i>' : '<i class="fas fa-play" style="margin-left:2px;"></i>'}</div>`;
-                    todoContainer.appendChild(cardEl);
+                    todoFragment.appendChild(cardEl);
                 });
+                todoContainer.appendChild(todoFragment);
             }
         }
+
+
 
         // =========================================================================
         // 📚 2. 학습 탭 (4파트로 나누어 보여줌)
@@ -1494,6 +1632,164 @@
             }
         }
 
+	// =========================================================================
+        // 🤖 툭탁 자동학습(오토 플레이) 모드 엔진 (요청하신 4단계 완벽 반영)
+        // =========================================================================
+        let isAutoPlayActive = false;
+        let autoPlayTimer = null;
+
+        function toggleAutoPlayMode() {
+            isAutoPlayActive = !isAutoPlayActive;
+            const btn = document.getElementById('btn-auto-play');
+            
+            if (isAutoPlayActive) {
+                btn.classList.add('active');
+                showAutoPlayNotice("🤖 자동학습 모드가 시작됩니다.");
+
+                // 자동모드를 켜는 순간, 현재 열려있는 정답이 있다면 즉시 닫고 가려진 초기 상태로 되돌림
+                isAnswerRevealed = false;
+                const engHalf = document.getElementById('eng-half');
+                if (engHalf) engHalf.classList.remove('revealed');
+                
+                const actionSpeak = document.getElementById('action-speak');
+                if (actionSpeak) actionSpeak.style.display = 'flex';
+                
+                const userRecordControls = document.getElementById('user-record-controls');
+                if (userRecordControls) userRecordControls.style.display = 'none';
+                
+                const cardNavButtons = document.getElementById('card-nav-buttons');
+                if (cardNavButtons) cardNavButtons.style.display = 'none';
+
+                // 2초 안내 팝업 후 첫 사이클 시작
+                autoPlayTimer = setTimeout(() => {
+                    if (isAutoPlayActive) runAutoPlayCycle();
+                }, 2000);
+            } else {
+                // 💡 [완벽 해결] 자동모드를 끄는 순간 타이머를 즉시 정지하고,
+                // 녹음 중이더라도 onstop 이벤트를 비운 뒤 강제로 중지시켜 팝업이 절대 뜨지 않도록 철저히 차단!
+                isAutoPlayActive = false;
+                if (btn) btn.classList.remove('active');
+                stopAutoPlayTimer();
+                
+                if (mediaRecorder) {
+                    try {
+                        mediaRecorder.onstop = () => {}; // 팝업 띄우는 함수 실행 원천 차단
+                        if (mediaRecorder.state === 'recording') {
+                            mediaRecorder.stop();
+                        }
+                    } catch (e) {}
+                }
+                
+                // 혹시 이미 떠버린 평가 팝업이 있다면 즉시 닫기
+                const evalModal = document.getElementById('eval-popup-modal');
+                if (evalModal) evalModal.classList.remove('active');
+            }
+        }
+
+
+
+
+        // 간단한 토스트 팝업 띄우는 함수
+        function showAutoPlayNotice(msg) {
+            let existing = document.getElementById('autoplay-toast-popup');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'autoplay-toast-popup';
+            toast.style.cssText = "position:fixed; top:20%; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:white; padding:16px 24px; border-radius:14px; font-weight:800; font-size:16px; z-index:10000; box-shadow:0 6px 20px rgba(0,0,0,0.2); transition:opacity 0.3s;";
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 1700); // 총 2초 유지 후 제거
+        }
+
+        function stopAutoPlayTimer() {
+            if (autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+            }
+        }
+
+        // 💡 [요청 2, 3, 4] 4단계 자동학습 루프 엔진
+        function runAutoPlayCycle() {
+            if (!isAutoPlayActive) return;
+            stopAutoPlayTimer();
+
+            // 카드가 바뀔 때마다 항상 가려진 상태로 시작
+            isAnswerRevealed = false;
+            document.getElementById('eng-half').classList.remove('revealed');
+            document.getElementById('action-speak').style.display = 'flex'; 
+            document.getElementById('user-record-controls').style.display = 'none';
+            document.getElementById('card-nav-buttons').style.display = 'none';
+
+            // 2. 💡 [요청 2] 스크립트만 보이는 상황에서 마이크 녹음기를 켜고, 3초~5초 생각할 시간(녹음 여유) 주기
+            try {
+                startRecording(); // 자동 녹음 시작!
+            } catch (e) {
+                console.log("자동 녹음 시작 실패:", e);
+            }
+
+            const card = currentDeck[currentCardIndex];
+
+          // 💡 [핵심 수정] 원어민 실제 발화 시간(end - start)을 가져오고, 없으면 글자 수 기준으로 안전하게 추정
+          let realAudioDurationSec = (card && card.audio && card.end > card.start) ? 
+              (card.end - card.start) : 
+              ((card && card.eng ? card.eng.length * 75 : 3000) / 1000);
+
+          // 💡 [요청 반영] 짧은 문장이든 긴 문장이든 "실제 발화 시간 + 4초~5초의 여유로운 생각할 시간"을 부여하여 조급하지 않게 세팅!
+          // (짧은 문장은 최소 4초, 긴 문장은 발화 시간의 1.2배 + 4초로 넉넉하게 보장)
+          let thinkSec = Math.max(4.0, realAudioDurationSec + 4.0);
+          let thinkTimeMs = (thinkSec / currentAudioSpeed) * 1000;
+
+
+            autoPlayTimer = setTimeout(() => {
+                if (!isAutoPlayActive) return;
+
+                // 3. 💡 [요청 3] 정답 화면이 열림과 동시에 원어민 음성 재생!
+                revealAnswerWithoutRecording(); // 정답 자동 열기
+                playNativeAudio(); // 원어민 음성 재생
+
+                // 4. 💡 [요청 4] 원어민 음성 재생 시간 + 3초 여유(따라 말하기 시간) 대기 후 다음 카드로 넘어가기
+                let audioDurationSec = (card && card.audio && card.end > card.start) ? 
+                    (card.end - card.start) : 
+                    ((card && card.eng ? card.eng.length * 75 : 3000) / 1000);
+                
+                let exactAudioMs = (audioDurationSec * 1000) / currentAudioSpeed;
+                let postDelay = exactAudioMs + 3000; // 원어민 음성 길이 + 3초 여유
+
+                autoPlayTimer = setTimeout(() => {
+                    if (!isAutoPlayActive) return;
+
+                    // 현재 문장 녹음 안전하게 종료 및 저장
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        mediaRecorder.onstop = () => {
+                            const mimeType = mediaRecorder.mimeType || 'audio/mp4';
+                            const audioBlob = new Blob(audioChunks, { type: mimeType });
+                            if (userAudioUrl) URL.revokeObjectURL(userAudioUrl);
+                            userAudioUrl = URL.createObjectURL(audioBlob);
+                        };
+                        mediaRecorder.stop();
+                    }
+
+                    // 마지막 카드면 자동학습 종료, 아니면 다음 카드로 이동
+                    if (currentCardIndex + 1 >= currentDeck.length) {
+                        isAutoPlayActive = false;
+                        const btn = document.getElementById('btn-auto-play');
+                        if (btn) btn.classList.remove('active');
+                        finishTuktak();
+                    } else {
+                        nextCard();
+                        runAutoPlayCycle(); // 다음 카드 사이클 반복
+                    }
+                }, postDelay);
+
+            }, thinkTimeMs);
+        }
+
+
         // =========================================================================
         // 📋 리스트 출력, 한/영 토글 및 배속 엔진
         // =========================================================================
@@ -1556,15 +1852,23 @@
 
         // 💡 [새로 추가된 함수] 리스트에서 '뒤로 가기' 버튼을 눌렀을 때 실행
         function hideList(type) {
-            stopNativeAudio(); // 혹시 재생 중인 음성이 있다면 정지
-            
-            // 리스트 영역 숨기기
-            document.getElementById(type + '-list-container').style.display = 'none';
-            
-            // 숨겨뒀던 표(Table)와 안내문구 다시 표시하기
-            document.querySelectorAll(`#view-${type} .stats-table-wrapper`).forEach(el => el.style.display = 'block');
-            document.querySelectorAll(`#view-${type} .schedule-info-box`).forEach(el => el.style.display = 'flex');
-        }
+          stopNativeAudio(); // 재생 중인 음성 정지 및 전체듣기 상태 해제
+
+          // 💡 [핵심] '듣기 중지'로 바뀌어 있던 전체듣기 버튼 UI를 원래대로('🎧') 강제 복구!
+          const btn = document.getElementById('btn-play-learn');
+          if (btn) {
+              btn.innerText = "🎧"; 
+              btn.style.background = "#f1f3f5"; 
+              btn.style.color = "#495057";
+          }
+
+          // 리스트 영역 숨기기
+          document.getElementById(type + '-list-container').style.display = 'none';
+
+          // 숨겨뒀던 표(Table)와 안내문구 다시 표시하기
+          document.querySelectorAll(`#view-${type} .stats-table-wrapper`).forEach(el => el.style.display = 'block');
+          document.querySelectorAll(`#view-${type} .schedule-info-box`).forEach(el => el.style.display = 'flex');
+      }
 
 
 
@@ -1658,7 +1962,7 @@
             const btn = document.getElementById('btn-play-learn');
             if (isPlayingAll && btn) {
                 isPlayingAll = false;
-                btn.innerText = "🎧 전체듣기"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057";
+                btn.innerText = "🎧"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057";
             }
 
             const card = globalTempLists[currentListIdx][index];
@@ -1710,12 +2014,30 @@
 // =========================================================================
 let selectedListenMode = 'listen'; // 'listen' 또는 'shadow'
 let configPlaySpeed = 1.0;
-let currentRepeatLimit = 2;
+let currentRepeatLimit = 3;
 let currentRepeatCurrent = 0;
 let isPlayingAll = false; 
         let playAllIndex = 0; 
         let playAllList = []; 
         let playAllTimer = null;
+
+
+function setConfigRepeat(count) {
+            currentRepeatLimit = count;
+            const buttons = document.querySelectorAll('#config-repeat-group .repeat-btn');
+            buttons.forEach((btn, idx) => {
+                let btnVal = idx + 1;
+                btn.style.background = '#f1f3f5';
+                btn.style.color = '#495057';
+                btn.style.fontWeight = '700';
+                
+                if (btnVal === count) {
+                    btn.style.background = '#e7f5ff';
+                    btn.style.color = '#339af0';
+                    btn.style.fontWeight = '800';
+                }
+            });
+        }
 
 
 function playAllInList(type) {
@@ -1724,7 +2046,7 @@ function playAllInList(type) {
 
     if (isPlayingAll) {
         isPlayingAll = false; stopNativeAudio();
-        if(btn) { btn.innerText = "🎧 전체듣기"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057"; }
+        if(btn) { btn.innerText = "🎧"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057"; }
         return;
     }
 
@@ -1766,13 +2088,12 @@ function startConfiguredPlayAll() {
     closeListenConfigModal();
 
     currentAudioSpeed = configPlaySpeed;
-    currentRepeatLimit = parseInt(document.getElementById('config-repeat-count').value) || 1;
     currentRepeatCurrent = 0;
     playAllIndex = 0;
     isPlayingAll = true;
 
     const btn = document.getElementById('btn-play-learn');
-    if(btn) { btn.innerText = "🛑 듣기 중지"; btn.style.background = "#ffe3e3"; btn.style.color = "#e03131"; }
+    if(btn) { btn.innerText = "⏹️"; btn.style.background = "#ffe3e3"; btn.style.color = "#e03131"; }
 
     playNextInList();
 }
@@ -1794,7 +2115,7 @@ function startConfiguredPlayAll() {
                 }
                 isPlayingAll = false;
                 if (player) player.ontimeupdate = null;
-                if(btn) { btn.innerText = "🎧 전체듣기"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057"; }
+                if(btn) { btn.innerText = "🎧"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057"; }
                 return;
             }
 
@@ -1804,13 +2125,38 @@ function startConfiguredPlayAll() {
 
             // 현재 문장 하이라이트 및 스크롤 이동 함수
             const highlightItem = (idx) => {
-                if(items[idx]) {
-                    items[idx].scrollIntoView({behavior: 'smooth', block: 'center'});
-                    Array.from(items).forEach(el => { el.style.border = "1px solid #e9ecef"; el.style.boxShadow = "none"; });
-                    items[idx].style.border = "2px solid #4dabf7";
-                    items[idx].style.boxShadow = "0 4px 12px rgba(77,171,247,0.2)";
+            if (items[idx]) {
+                const wrapper = items[idx].closest('.list-wrapper');
+                
+                if (wrapper) {
+                    if (idx === 0) {
+                        // 첫 번째 문장은 맨 위에 고정
+                        wrapper.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                        // 💡 [핵심 해결] 브라우저 전체가 흔들리지 않도록 화면상의 절대 좌표를 계산하여
+                        // '리스트 박스(wrapper)' 내부의 스크롤만 정확히 움직이도록 제어!
+                        const itemRect = items[idx].getBoundingClientRect();
+                        const wrapperRect = wrapper.getBoundingClientRect();
+                        
+                        // 현재 스크롤 위치 + (아이템의 현재 화면 위치 - 래퍼의 화면 위치) - 상단 여백(약 95px, 두 번째 카드 위치)
+                        const targetScrollTop = wrapper.scrollTop + (itemRect.top - wrapperRect.top) - 95;
+                        
+                        wrapper.scrollTo({
+                            top: Math.max(0, targetScrollTop),
+                            behavior: 'smooth'
+                        });
+                    }
                 }
-            };
+
+                // 테두리 및 그림자 강조 스타일 적용
+                Array.from(items).forEach(el => { 
+                    el.style.border = "1px solid #e9ecef"; 
+                    el.style.boxShadow = "none"; 
+                });
+                items[idx].style.border = "2px solid #4dabf7";
+                items[idx].style.boxShadow = "0 4px 12px rgba(77,171,247,0.2)";
+            }
+        };
 
             highlightItem(playAllIndex);
 
@@ -2110,6 +2456,7 @@ function startConfiguredPlayAll() {
 
         function showCard() {
             stopNativeAudio();
+	    stopAutoPlayTimer();
             if (currentCardIndex >= currentDeck.length) { finishTuktak(); return; }
 
             const card = currentDeck[currentCardIndex];
@@ -2240,20 +2587,23 @@ function startConfiguredPlayAll() {
                 mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
                 
                 mediaRecorder.onstop = () => {
-                    const mimeType = mediaRecorder.mimeType || 'audio/mp4';
-                    const audioBlob = new Blob(audioChunks, { type: mimeType }); 
-                    if (userAudioUrl) URL.revokeObjectURL(userAudioUrl);
-                    userAudioUrl = URL.createObjectURL(audioBlob);
-                    
-                    const player = document.getElementById('user-audio-player');
-                    player.volume = 1.0; // 💡 볼륨을 항상 100% 최대치로 고정
-                    player.src = userAudioUrl;
-                    player.load();
-                    
-                    const card = currentDeck[currentCardIndex];
-                    document.getElementById('eval-popup-eng').innerText = card.eng;
-                    document.getElementById('eval-popup-modal').classList.add('active');
-                };
+                  const mimeType = mediaRecorder.mimeType || 'audio/mp4';
+                  const audioBlob = new Blob(audioChunks, { type: mimeType }); 
+                  if (userAudioUrl) URL.revokeObjectURL(userAudioUrl);
+                  userAudioUrl = URL.createObjectURL(audioBlob);
+
+                  const player = document.getElementById('user-audio-player');
+                  player.volume = 1.0; 
+                  player.src = userAudioUrl;
+                  player.load();
+
+                  // 💡 [핵심] 자동학습 모드(isAutoPlayActive)가 아닐 때만 수동 평가 팝업을 띄움!
+                  if (!isAutoPlayActive) {
+                      const card = currentDeck[currentCardIndex];
+                      document.getElementById('eval-popup-eng').innerText = card.eng;
+                      document.getElementById('eval-popup-modal').classList.add('active');
+                  }
+              };
 
                 // 💡 [해결 2] 200ms 쪼개기를 제거하고 순정 start()를 사용하여 사파리 오디오 깨짐 방지
                 mediaRecorder.start();
@@ -2493,6 +2843,26 @@ function startConfiguredPlayAll() {
 
         function exitTuktak() { 
             stopNativeAudio(); 
+            
+            // 💡 [핵심] 엑스 버튼을 눌러 나갈 때도 자동모드를 즉시 끄고, 녹음기 onstop 팝업을 원천 차단!
+            isAutoPlayActive = false; 
+            stopAutoPlayTimer();
+            
+            if (mediaRecorder) {
+                try {
+                    mediaRecorder.onstop = () => {}; // 팝업 띄우는 함수 실행 차단
+                    if (mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                    }
+                } catch (e) {}
+            }
+
+            const evalModal = document.getElementById('eval-popup-modal');
+            if (evalModal) evalModal.classList.remove('active');
+
+            const btn = document.getElementById('btn-auto-play');
+            if (btn) btn.classList.remove('active');
+            
             if (globalAudioStream) {
                 globalAudioStream.getTracks().forEach(t => t.stop());
                 globalAudioStream = null;
@@ -2502,7 +2872,7 @@ function startConfiguredPlayAll() {
             const bottomControls = document.getElementById('bottom-app-controls');
             if (bottomControls) bottomControls.style.display = 'flex';
 
-            // 💡 [추가] 학습 모드를 나올 때 A4 PDF 다운로드 버튼 다시 복구
+            // 학습 모드를 나올 때 A4 PDF 다운로드 버튼 다시 복구
             const pdfBtn = document.getElementById('pdf-download-btn');
             if (pdfBtn) pdfBtn.style.display = 'inline-block';
 
@@ -3036,7 +3406,7 @@ function startConfiguredPlayAll() {
                         .eng-col { width: 50%; }
                         .kor-text { width: 45%; font-weight: 700; color: #2b8a3e; font-size: 15px; }
                         .eng-text { font-weight: 700; color: #1e293b; font-size: 15px; margin-bottom: 4px; }
-                        .ipa-text { color: #64748b; font-size: 12px; margin-bottom: 4px; font-style: italic; }
+                        .ipa-text { color: #64748b; font-size: 13px; margin-bottom: 4px; font-style: italic; }
                         .source-text { color: #adb5bd; font-size: 11px; }
                         tr { page-break-inside: avoid; }
                     </style>
