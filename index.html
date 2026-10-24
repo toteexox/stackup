@@ -463,6 +463,33 @@
 
 
 
+
+	/* 💻 PC 화면 전용 스타일 (화면 가로 너비가 768px 이상일 때만 작동) */
+        @media (min-width: 768px) {
+            /* 1. 문장 카드(툭탁 뷰) 내부 메인 글씨 확대 */
+            .eng-text { font-size: 28px !important; } /* 기존 24px -> 32px */
+            .kor-text { font-size: 25px !important; } /* 기존 19px -> 24px */
+            .ipa-text { font-size: 20px !important; } /* 기존 16px -> 18px */
+
+            /* 2. 학습/줍줍 리스트 내부 글씨 확대 */
+            .text-green, 
+            .jub-item .eng, 
+            .jub-item .kor { font-size: 22px !important; } /* 기존 18px -> 22px */
+            .text-gray { font-size: 18px !important; }     /* 기존 14/16px -> 18px */
+
+            /* 3. 문장 카드 전체 크기도 PC에 맞게 더 시원하게 확대 */
+            .tuktak-card { height: 500px !important; }
+            .kor-half { min-height: 180px !important; }
+            .eng-half { min-height: 320px !important; }
+            
+            /* 4. 상황 메모 모달 텍스트 및 박스 확대 */
+            #context-modal-script { font-size: 25px !important; padding: 18px !important; }
+            .edit-modal { max-width: 550px !important; }
+        }
+
+
+
+
     </style>
 
 
@@ -472,7 +499,7 @@
 
     <!-- 🔴 [신규] 10월 25일까지 표시되는 얇은 테스트 모드 배너 -->
     <div id="test-mode-banner" style="display:none; position:fixed; top:0; left:0; width:100%; height:26px; background:#fa5252; color:white; font-size:12px; font-weight:800; text-align:center; line-height:26px; z-index:1001;">
-        ⚠️ 현재 테스트 모드 운영 중 (10월 25일 데이터 초기화)
+        ⚠️ 현재 테스트 모드 운영 중 (10월 25일 미션 초기화)
     </div>
 
 
@@ -2705,7 +2732,7 @@ function startConfiguredPlayAll() {
         }
 
 
-        // 🎙️ [수정] 녹음 종료
+        // 🎙️ [완벽 개선] 녹음 종료 (스피커/이어폰 출력 정상화)
         function stopRecording() {
             if(mediaRecorder && mediaRecorder.state !== 'inactive') {
                 const btn = document.getElementById('btn-speak-record');
@@ -2714,8 +2741,15 @@ function startConfiguredPlayAll() {
 
                 setTimeout(() => {
                     mediaRecorder.stop();
-                    // 💡 핵심: 여기서 마이크(stream)를 끄지 않습니다! 
-                    // 끄지 않고 유지해야 다음 문장을 녹음할 때 OS가 첫 3초 볼륨을 줄이는 현상이 사라집니다.
+                    
+                    // 💡 [핵심 해결] 녹음이 끝나는 즉시 마이크 연결을 완전히 끊어줍니다!
+                    // 마이크가 켜져있으면 폰이 '통화 중'으로 착각해 상단 수화기로 소리를 아주 작게 내보냅니다.
+                    // 마이크를 꺼주면 즉시 '미디어 모드'로 복귀하여 이어폰이나 메인 스피커로 정상 출력됩니다.
+                    if (globalAudioStream) {
+                        globalAudioStream.getTracks().forEach(t => t.stop());
+                        globalAudioStream = null;
+                    }
+                    
                     btn.disabled = false;
                 }, 200);
             }
