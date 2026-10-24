@@ -56,6 +56,8 @@
         .view-section.active { display: block; }
         body.tuktak-mode .nav-tabs, body.tuktak-mode .date-simulator { display: none !important; }
         body.tuktak-mode .main-container { padding-top: 24px; padding-bottom: 24px; }
+	.main-container { display: none; }
+        body.app-loaded .main-container { display: block; }
 
         /* 섹션 타이틀 */
         .section-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; margin-top: 8px; }
@@ -136,8 +138,8 @@
         .list-wrapper { display: flex; flex-direction: column; gap: 12px; max-height: none; overflow-y: visible; padding-right: 0; }
         .jub-item { 
             background: #ffffff; 
-            border-radius: 18px; 
-            padding: 18px 20px; 
+            border-radius: 16px; 
+            padding: 14px 14px; /* 💡 모바일 화면을 위해 카드 좌우/상하 여백을 컴팩트하게 조정 */
             border: 1px solid #e2e8f0; 
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); 
             display: flex; 
@@ -173,14 +175,14 @@
             right: 20px; 
             width: 50px; 
             height: 50px; 
-            background: #e9ecef; /* 부드러운 연회색 배경 */
-            color: #495057;      /* 진회색 텍스트 및 아이콘 */
-            border: 1px solid #dee2e6; 
+            background: #ced4da; /* 기존보다 더 진한 그레이톤 */
+            color: #212529;      /* 텍스트도 진하게 */
+            border: 1px solid #adb5bd; 
             border-radius: 50%; 
             font-size: 11px; 
             font-weight: 800; 
             cursor: pointer; 
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12); 
             display: none; 
             flex-direction: column; 
             align-items: center; 
@@ -190,12 +192,23 @@
         }
         #btn-scroll-top:active { 
             transform: scale(0.92); 
-            background: #dee2e6; 
+            background: #adb5bd; 
         }
 
         /* 툭탁 뷰 헤더 */
-        .tuktak-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .header-left-badges { display: flex; align-items: center; gap: 8px; }
+        .tuktak-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 14px; 
+            width: 100%;
+        }
+        .header-left-badges { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            flex-wrap: nowrap;
+        }
         .task-badge-header { background: #343a40; color: #ffffff; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 15px; letter-spacing: 0.5px; }
         .card-counter { background: #ffffff; border: 1.5px solid #dee2e6; padding: 5px 14px; border-radius: 20px; font-weight: 700; font-size: 14px; color: #495057; }
         .back-btn { background: #e9ecef; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; color: #495057; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -309,6 +322,37 @@
             .jub-item { border-bottom: 1px solid #cbd5e1 !important; break-inside: avoid; }
         }
 
+       /* 💡 스크립트/메모 토글키 스타일 및 가독성 개선 */
+        .tuktak-toggle-wrapper { position: relative; display: flex; background: #e9ecef; border-radius: 18px; padding: 2px; cursor: pointer; align-items: center; width: 120px; height: 30px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+        .tuktak-toggle-slider { position: absolute; top: 2px; left: 2px; width: 58px; height: 26px; background: #339af0; border-radius: 16px; transition: left 0.25s cubic-bezier(0.4, 0.0, 0.2, 1); }
+        
+        /* 메모 모드(우측)로 켜졌을 때 슬라이더가 오른쪽으로 이동 */
+        .tuktak-toggle-wrapper.memo-mode .tuktak-toggle-slider { left: 60px; }
+        
+        .tuktak-toggle-option { flex: 1; text-align: center; font-size: 11px; font-weight: 800; color: #343a40; z-index: 1; transition: color 0.25s; pointer-events: none; }
+        .tuktak-toggle-option.active { color: #ffffff !important; font-weight: 900; }
+
+
+
+	/* 💡 1. 한글 영역(kor-half) 내 우측 상단에 위치할 정보(ℹ️) 버튼 스타일 */
+        .kor-half-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+        .btn-kor-memo {
+            background: transparent;
+            border: none;
+            color: #868e96;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px 6px;
+            transition: color 0.2s;
+        }
+        .btn-kor-memo:hover { color: #339af0; }
+        .btn-kor-memo.has-memo { color: #339af0; }
 
     </style>
 
@@ -325,7 +369,7 @@
 
 
     <!-- 🔒 로그인 오버레이 (ID 입력) -->
-    <div class="login-overlay active" id="login-overlay">
+    <div class="login-overlay" id="login-overlay">
         <div class="loading-spinner" id="login-spinner"></div>
         <div id="login-content" class="login-box">
             <h1>스터디 트래커 & 툭탁</h1>
@@ -456,20 +500,39 @@
         <!-- 4. 툭탁 학습 뷰 -->
         <div id="view-tuktak" class="view-section">
             <div class="tuktak-header">
+                <!-- 1. 좌측 뱃지 그룹 -->
                 <div class="header-left-badges">
                     <div class="task-badge-header" id="tuktak-badge">MS 01</div>
-                    <!-- 💡 진행률(카운터)을 가운데로 올리고 성취도(상태)를 맨 끝으로 내렸습니다. -->
                     <div class="card-counter" id="tuktak-counter" style="margin-left:4px;">1 / 24</div>
                     <div class="task-badge-header" id="tuktak-status" style="display:none; font-size:14px; margin-left:4px;"></div>
                 </div>
-                <button class="back-btn" onclick="exitTuktak()"><i class="fas fa-times"></i></button>
+                
+                <!-- 2. 우측 토글키 + 닫기 버튼 그룹 -->
+                <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                    <div class="tuktak-toggle-wrapper" id="tuktak-mode-toggle" onclick="toggleTuktakViewMode()">
+                        <div class="tuktak-toggle-slider"></div>
+                        <div class="tuktak-toggle-option opt-script active">스크립트</div>
+                        <div class="tuktak-toggle-option opt-memo">📝 메모</div>
+                    </div>
+                    <button class="back-btn" onclick="exitTuktak()"><i class="fas fa-times"></i></button>
+                </div>
             </div>
 
             <!-- 🔥 일체형 분할 카드 -->
             <div class="tuktak-container">
                 <div class="tuktak-card">
-                    <div class="card-half kor-half">
-                        <div class="text-content kor-text" id="tuktak-kor"></div>
+                    <div class="card-half kor-half" style="justify-content: flex-start;">
+                        <!-- 💡 1. 한글 영역 우측 상단에 배치된 헤더 (상황 메모 버튼 포함) -->
+                        <div class="kor-half-header">
+                            <div></div> <!-- 좌측 여백 균형용 -->
+                            <button class="btn-kor-memo" id="btn-card-memo" onclick="openContextModalFromCard(event)" title="상황 메모 보기">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                        </div>
+                        <!-- 한글 뜻 또는 메모가 출력되는 본문 -->
+                        <div style="flex:1; display:flex; align-items:center; justify-content:center; width:100%;">
+                            <div class="text-content kor-text" id="tuktak-kor"></div>
+                        </div>
                     </div>
                     <!-- 💡 이제 탭해서 정답을 보는 기능을 빼고, 버튼을 통해 흐름을 타도록 onclick을 제거했습니다. -->
                     <div class="card-half eng-half" id="eng-half">
@@ -487,10 +550,7 @@
                                 </div>
                             </div>
                             <!-- 💡 우측에 상황 메모(ℹ️) 버튼과 줍줍(🧺) 버튼 나란히 배치 -->
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <button class="icon-btn jub-btn" id="btn-card-memo" onclick="openContextModalFromCard(event)" style="font-size:16px;">
-                                    <i class="fas fa-info-circle"></i>
-                                </button>
+                            <div style="display:flex; align-items:center; gap:6px;">                                
                                 <button class="icon-btn jub-btn" id="btn-jub" onclick="openEditModal(event)">
                                     🧺 <span id="jub-count-badge" class="jub-badge">0</span>
                                 </button>
@@ -712,15 +772,14 @@
 
         let isAdmin = false;
 
+        // 🚀 [수정] 로그인 시 깜빡임(3단계 렌더링)을 없애고 부드럽게 한 번에 진입하는 인증 감지 함수
         auth.onAuthStateChanged(async (user) => {
+            const overlay = document.getElementById('login-overlay');
             if (user) {
                 currentUserUid = user.uid;
                 
-                // 💡 [수정] 로그인한 계정이 'Raina'인지 정확하게 확인 (이메일 앞부분 또는 이메일 통째로 비교)
                 const userEmail = user.email || "";
-                const emailIdPart = userEmail.split('@')[0]; // 이메일의 @ 앞부분 추출
-                
-                // 소문자로 변환해서 비교하거나 'Raina' 정확히 일치 여부 확인
+                const emailIdPart = userEmail.split('@')[0];
                 isAdmin = (emailIdPart === "Raina" || userEmail === "Raina" || emailIdPart.toLowerCase() === "raina");
                 
                 const adminBtn = document.getElementById('admin-panel-btn');
@@ -728,16 +787,44 @@
                     adminBtn.style.display = isAdmin ? 'block' : 'none';
                 }
 
-                document.getElementById('login-content').style.display = 'none';
-                document.getElementById('login-spinner').style.display = 'block';
-                await loadUserDataFromFirebase();
-                document.getElementById('login-overlay').classList.remove('active');
+                try {
+                    const docSnap = await db.collection("studyUsers").doc(currentUserUid).get();
+                    if (docSnap.exists) {
+                        userDB = docSnap.data();
+                        if(!userDB.completedTasks) userDB.completedTasks = {};
+                        if(!userDB.jubs) userDB.jubs = {};
+                        if(!userDB.cardStats) userDB.cardStats = {};
+                        if(!userDB.cardMemos) userDB.cardMemos = {};
+                    } else {
+                        userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {}, passwordChanged: false };
+                    }
+
+                    if (userDB.passwordChanged !== true) {
+                        document.getElementById('pw-change-modal').classList.add('active');
+                    }
+
+                    userDB.lastLoginAt = new Date().toISOString();
+                    saveDB();
+                } catch (e) {
+                    console.error("데이터 사전 로드 실패:", e);
+                }
+
+                if (overlay) overlay.classList.remove('active');
+                
+                // 💡 [핵심] 로그인 확인 및 데이터 준비가 모두 끝난 순간에 메인 화면을 한 번에 노출!
+                document.body.classList.add('app-loaded');
+                updateDateDisplay();
+
             } else {
                 currentUserUid = null; isAdmin = false;
                 userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {} };
                 document.getElementById('login-spinner').style.display = 'none';
                 document.getElementById('login-content').style.display = 'flex';
-                document.getElementById('login-overlay').classList.add('active');
+                
+                if (overlay) overlay.classList.add('active');
+                
+                // 💡 로그인이 안 되어 있을 때도 메인 화면 클래스를 붙여 로그인 창이 뜨게 함
+                document.body.classList.add('app-loaded');
             }
         });
 
@@ -910,21 +997,48 @@
         }
 
 
-        // 3. 특정 유저 데이터 선택 초기화
+        // 3-1. 특정 유저의 '미션 인증 데이터(completedTasks)'만 선택 초기화 (줍줍/성취도/메모 유지!)
         async function adminResetUser(uid) {
-            if(confirm("해당 유저의 모든 학습 진행률과 줍줍 데이터를 초기화하시겠습니까?")) {
-                const docRef = db.collection("studyUsers").doc(uid);
-                const docSnap = await docRef.get();
-                let currentPwState = docSnap.exists ? (docSnap.data().passwordChanged || false) : false;
-
-                await docRef.set({
-                    completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {}, passwordChanged: currentPwState
-                });
-                alert("선택한 유저의 데이터가 초기화되었습니다.");
-                renderAdminUserList();
-                if (uid === currentUserUid) loadUserDataFromFirebase();
+            if(confirm("해당 회원의 '미션 인증 기록(O/X 및 패널티)'만 초기화하시겠습니까?\n(※ 줍줍 문장, 성취도, 메모 등 학습 데이터는 그대로 안전하게 유지됩니다.)")) {
+                try {
+                    const docRef = db.collection("studyUsers").doc(uid);
+                    // 💡 set 대신 update를 사용하여 completedTasks만 빈 객체로 초기화!
+                    await docRef.update({
+                        completedTasks: {}
+                    });
+                    alert("선택한 회원의 미션 인증 기록이 초기화되었습니다.");
+                    renderAdminUserList();
+                    if (uid === currentUserUid) loadUserDataFromFirebase();
+                } catch (err) {
+                    console.error(err);
+                    alert("초기화 중 오류가 발생했습니다: " + err.message);
+                }
             }
         }
+
+        // 3-2. 💡 [신규] 전체 회원의 '미션 인증 데이터' 일괄 초기화
+        async function adminResetAllMissions() {
+            if(!isAdmin) return;
+            if(confirm("⚠️ 정말 [모든 회원]의 미션 인증 기록을 일괄 초기화하시겠습니까?\n\n※ 모든 회원의 줍줍 문장, 성취도(술술/버벅/막힘), 메모는 삭제되지 않고 그대로 보존됩니다.")) {
+                try {
+                    const snapshot = await db.collection("studyUsers").get();
+                    const batch = db.batch(); // 파이어베이스 일괄 처리(Batch) 사용
+
+                    snapshot.forEach(doc => {
+                        batch.update(doc.ref, { completedTasks: {} });
+                    });
+
+                    await batch.commit();
+                    alert("🎉 모든 회원의 미션 인증 기록이 깔끔하게 초기화되었습니다!");
+                    renderAdminUserList();
+                    loadUserDataFromFirebase();
+                } catch (err) {
+                    console.error(err);
+                    alert("전체 미션 초기화 중 오류가 발생했습니다: " + err.message);
+                }
+            }
+        }
+
 
         // 4. 유저 삭제
         async function adminDeleteUser(uid) {
@@ -1003,6 +1117,7 @@
         }
 
 
+        // 🚀 [최적화] 데이터 로딩 함수 (백그라운드 비동기 처리)
         async function loadUserDataFromFirebase() {
             if (!currentUserUid) return;
             try {
@@ -1017,13 +1132,14 @@
                     userDB = { completedTasks: {}, jubs: {}, cardStats: {}, cardMemos: {}, passwordChanged: false };
                 }
 
-                // 💡 [추가] 로그인 성공 시 현재 시스템 날짜 기준 최근 로그인 시간 업데이트
-                userDB.lastLoginAt = new Date().toISOString();
-                await saveDB();
-
+                // 비밀번호 변경 체크 팝업
                 if (userDB.passwordChanged !== true) {
                     document.getElementById('pw-change-modal').classList.add('active');
                 }
+
+                // 최근 로그인 시간 업데이트는 메인 화면 진입 후 백그라운드로 조용히 실행
+                userDB.lastLoginAt = new Date().toISOString();
+                saveDB();
 
             } catch (e) {  
                 console.error("데이터 로드 실패:", e);
@@ -1865,7 +1981,7 @@ function startConfiguredPlayAll() {
         // =========================================================================
         // 📚 4. 툭탁 학습 엔진 (일일 미션 & 버닝모드 + 실제 녹음 기능)
         // =========================================================================
-        let currentDeck = []; let currentCardIndex = 0; let currentTaskId = null; let currentChStr = ""; let isAnswerRevealed = false; let audioTimer = null;
+        let currentDeck = []; let currentCardIndex = 0; let currentTaskId = null; let currentChStr = ""; let isAnswerRevealed = false; let audioTimer = null; let isTuktakMemoMode = false;
         
         // 🎙️ [수정] 녹음 관련 변수 (마이크 스트림을 끄지 않고 유지하기 위한 전역 변수 추가)
         let mediaRecorder;
@@ -1936,6 +2052,30 @@ function startConfiguredPlayAll() {
             }
         }
 
+
+	// 💡 1 & 2. 스크립트/메모 토글 방향 정상화 함수
+        function toggleTuktakViewMode() {
+            isTuktakMemoMode = !isTuktakMemoMode;
+            const wrapper = document.getElementById('tuktak-mode-toggle');
+            const optScript = wrapper.querySelector('.opt-script');
+            const optMemo = wrapper.querySelector('.opt-memo');
+
+            if (isTuktakMemoMode) {
+                // 메모 모드 켜짐 (슬라이더 우측)
+                wrapper.classList.add('memo-mode');
+                optScript.classList.remove('active');
+                optMemo.classList.add('active');
+            } else {
+                // 스크립트 모드 켜짐 (슬라이더 좌측)
+                wrapper.classList.remove('memo-mode');
+                optMemo.classList.remove('active');
+                optScript.classList.add('active');
+            }
+            showCard(); // 화면 갱신
+        }
+
+
+
         function launchTuktakView() {
             stopNativeAudio();
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
@@ -1966,7 +2106,24 @@ function startConfiguredPlayAll() {
 
             document.getElementById('tuktak-badge').innerText = card.badge;
             document.getElementById('tuktak-counter').innerText = `${currentCardIndex + 1} / ${currentDeck.length}`;
-            document.getElementById('tuktak-kor').innerText = displayKor;
+
+            // 💡 메모 모드일 때: 작성된 메모가 있으면 메모를 띄우고, 없으면 그냥 한글 스크립트를 띄움!
+            const korEl = document.getElementById('tuktak-kor');
+            if (isTuktakMemoMode) {
+                const memoKey = card.ch + "_" + card.originalEng;
+                const savedMemo = userDB.cardMemos && userDB.cardMemos[memoKey] ? userDB.cardMemos[memoKey] : "";
+                
+                if (savedMemo) {
+                    // 작성된 메모가 있을 때
+                    korEl.innerHTML = `<span style="color:#495057; font-size:19px; font-weight:700; line-height:1.45; display:block; text-align:center;">${savedMemo}</span>`;
+                } else {
+                    // 💡 작성된 메모가 없을 때는 안내 문구 대신 그냥 원래 한글 스크립트 출력!
+                    korEl.innerText = displayKor;
+                }
+            } else {
+                // 기본 스크립트 모드
+                korEl.innerText = displayKor;
+            }
             
             const engContainer = document.getElementById('tuktak-eng');
             engContainer.innerHTML = '';
@@ -1983,12 +2140,10 @@ function startConfiguredPlayAll() {
             if (card.ipa) { ipaEl.innerText = card.ipa; ipaEl.style.display = 'inline-block'; } 
             else { ipaEl.style.display = 'none'; }
             
-            // 💡 기존 학습 이력(성취도) 확인
             const key = card.ch + "_" + card.originalEng;
             const prevStatus = userDB.cardStats[key];
             const statusBadge = document.getElementById('tuktak-status');
             
-            // 과거 성취도가 있으면 상단 뱃지는 항상 표시해 줌
             if (prevStatus) {
                 statusBadge.style.display = 'block';
                 statusBadge.innerText = prevStatus;
@@ -1999,8 +2154,6 @@ function startConfiguredPlayAll() {
                 statusBadge.style.display = 'none';
             }
 
-            // 💡 [핵심 변경] 일일 미션(currentTaskId 존재)이면서 기록이 있을 때만 정답 즉시 공개
-            // 버닝 모드(currentTaskId === null)일 때는 무조건 녹음부터 시작!
             if (prevStatus && currentTaskId !== null) {
                 isAnswerRevealed = true;
                 document.getElementById('eng-half').classList.add('revealed'); 
@@ -2022,7 +2175,6 @@ function startConfiguredPlayAll() {
                 document.getElementById('card-nav-buttons').style.display = 'none';
             }
 
-            // 변형 문장 원어민 오디오 버튼 숨김 처리
             const audioControls = document.getElementById('audio-controls');
             if (audioControls) {
                 if (displayEng !== card.originalEng || !card.audio) audioControls.style.display = 'none';
@@ -2895,8 +3047,14 @@ function startConfiguredPlayAll() {
                 <div id="admin-create-error" style="color:#fa5252; font-size:12px; margin-top:2px;"></div>
             </div>
 
-            <!-- 2. 등록된 회원 목록 및 관리 (초기화 및 삭제) -->
-            <div style="font-weight:800; font-size:14px; color:#1e293b; margin-bottom:8px;">👥 회원 목록 및 데이터 초기화/삭제</div>
+            <!-- 2. 등록된 회원 목록 및 관리 (미션 초기화 및 삭제) -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="font-weight:800; font-size:14px; color:#1e293b;">👥 회원 목록 및 관리</div>
+                <!-- 💡 [신규] 전체 회원 미션 일괄 초기화 버튼 -->
+                <button style="padding:6px 10px; background:#e03131; color:white; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer;" onclick="adminResetAllMissions()">
+                    🔄 전체 회원 미션 초기화
+                </button>
+            </div>
             <div id="admin-user-list" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
                 <!-- 자바스크립트로 동적 생성됨 -->
             </div>
