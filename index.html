@@ -61,8 +61,10 @@
         .view-section { display: none; }
         .view-section.active { display: block; }
         body.tuktak-mode .nav-tabs, body.tuktak-mode .date-simulator { display: none !important; }
-        body.tuktak-mode .main-container { padding-top: 24px; padding-bottom: 24px; }
-	.main-container { display: none; }
+        body.tuktak-mode .main-container { 
+            padding-top: 100px !important;  /* 무조건 12px로 고정! */
+            padding-bottom: 24px !important; 
+        }
         body.app-loaded .main-container { display: block; }
 
         /* 섹션 타이틀 */
@@ -271,19 +273,19 @@
 
         /* 🔥 일체형 카드 컨테이너 & 레이아웃 */
         .tuktak-container { width: 100%; max-width: 100%; display: flex; flex-direction: column; background: white; border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); border: 2px solid #4dabf7; overflow: hidden; margin-bottom: 20px; }
-        .tuktak-card { display: flex; flex-direction: column; height: 420px; position: relative; }
-        .card-half { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; width: 100%; }
+	.tuktak-card { display: flex; flex-direction: column; height: 500px; position: relative; }
         
-        /* 한글 영역 (높이 축소) */
+        .card-half { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; width: 100%; }        
+        /* 한글 영역 ) */
         .kor-half { 
             flex: 0.9;
-            min-height: 130px; 
+            min-height: 150px; 
             padding: 10px 10px; 
             border-bottom: 2px dashed #e9ecef; 
             background: #ffffff; 
         }
 	/* 영어 영역 (높이 확대) */
-        .eng-half { flex: 2.3; min-height: 250px; padding: 10px 10px; background: #f8f9fa; cursor: pointer; }
+        .eng-half { flex: 2.3; min-height: 330px; padding: 10px 10px; background: #f8f9fa; cursor: pointer; }
         .eng-half.revealed { background: white; cursor: default; }
 
 
@@ -782,6 +784,11 @@
                 <div><b>4. 상대방은 이 말을 듣고 어떻게 받아들일까?</b><br><span style="color:#868e96; font-size:12px;">안심할 수도 있고, 부담을 덜 수도 있고, 반대로 서운할 수도 있어요.</span></div>
             </div>
 
+            <!-- 💡 [신규] 선택한 영어 스크립트가 표시될 영역 -->
+            <div id="context-modal-script" style="background:#e7f5ff; color:#1864ab; padding:12px; border-radius:10px; margin-bottom:14px; font-size:16px; font-weight:800; text-align:center; word-break:keep-all; border:1px solid #a5d8ff;">
+                <!-- 자바스크립트가 여기에 영어를 넣어줍니다 -->
+            </div>
+
             <span class="edit-label">📝 나의 상황 메모</span>
             <textarea id="context-memo-input" rows="4" placeholder="이 문장이 쓰이는 상황과 느낌을 자유롭게 메모해 보세요."></textarea>
             <div class="modal-btns">
@@ -790,7 +797,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- 🎧 [신규] 전체듣기 설정 모달 (듣기/섀도잉, 반복 횟수, 배속 선택) -->
     <div class="modal-overlay" id="listen-config-modal">
@@ -1994,7 +2000,8 @@
                 
                 // 우측 액션 버튼 그룹 (ℹ️ 메모, ✏️ 수정, 🗑️ 삭제)
                 html += `<div class="item-actions">`;
-                html += `<button class="btn-icon-action ${memoText ? 'has-memo' : ''}" onclick="openContextModal('${card.ch}', '${card.originalEng.replace(/'/g, "\\'")}', event)"><i class="fas fa-info-circle"></i></button>`;
+                // 💡 [수정] data-kor 속성을 추가하여 한글 텍스트를 모달로 전달합니다.
+                html += `<button class="btn-icon-action ${memoText ? 'has-memo' : ''}" data-kor="${card.kor.replace(/"/g, '&quot;')}" onclick="openContextModal('${card.ch}', '${card.originalEng.replace(/'/g, "\\'")}', this.dataset.kor, event)"><i class="fas fa-info-circle"></i></button>`;
                 
                 if(currentListType === 'basket' && card.jubId) {
                     html += `<button class="btn-icon-action" onclick="openEditJubFromList('${card.jubId}', event)"><i class="fas fa-pencil-alt"></i></button>`;
@@ -3307,13 +3314,24 @@ function startConfiguredPlayAll() {
             if(e) e.stopPropagation();
             const card = currentDeck[currentCardIndex];
             if(!card) return;
-            openContextModal(card.ch, card.originalEng, e);
+            // 💡 [수정] 모달을 열 때 card.kor (한글 문장)도 함께 넘겨줍니다.
+            openContextModal(card.ch, card.originalEng, card.kor, e);
         }
 
-        function openContextModal(ch, originalEng, e) {
+        function openContextModal(ch, originalEng, korText, e) {
+            // 구버전(인자가 3개인 경우) 호환성 처리
+            if (korText && korText.stopPropagation) {
+                e = korText;
+                korText = originalEng; 
+            }
             if(e) e.stopPropagation();
             currentMemoKey = ch + "_" + originalEng;
             if(!userDB.cardMemos) userDB.cardMemos = {};
+            
+            // 💡 [수정] 파란색 영역 박스에 전달받은 한글 문장을 출력합니다.
+            const scriptBox = document.getElementById('context-modal-script');
+            if (scriptBox) scriptBox.innerText = korText || originalEng;
+
             document.getElementById('context-memo-input').value = userDB.cardMemos[currentMemoKey] || "";
             document.getElementById('context-modal').classList.add('active');
         }
