@@ -1995,7 +1995,6 @@ function startConfiguredPlayAll() {
             if (typeof studyData === 'undefined') return alert("⚠️ data.js 파일이 없습니다!");
             const chData = studyData[chStr]; let deck = [];
 
-            // 1일차, 3일차, 5일차: 본문(MS/RC) 추가
             if (dayLabel === "1일차" || dayLabel === "3일차" || dayLabel === "5일차") {
                 if (chData) {
                     if (chData.mystory) deck.push(...extractCards(chData.mystory.sentences, `MS ${chStr}`, chData.mystory.audio, chStr));
@@ -2003,7 +2002,6 @@ function startConfiguredPlayAll() {
                 }
             } 
             
-            // 2일차: 확장(UE) 추가
             if (dayLabel === "2일차") {
                 if (chData) {
                     if (chData.useful_mystory) deck.push(...extractCards(chData.useful_mystory.sentences, `MS UE ${chStr}`, chData.useful_mystory.audio, chStr));
@@ -2011,10 +2009,8 @@ function startConfiguredPlayAll() {
                 }
             } 
             
-            // 4일차, 5일차: 장바구니(줍줍) 추가
             if (dayLabel === "4일차" || dayLabel === "5일차") {
                 const myJubs = userDB.jubs.filter(j => j.ch === chStr);
-                // 4일차는 장바구니만 하므로 비어있으면 경고, 5일차는 본문이 있으므로 그냥 넘깁니다.
                 if (dayLabel === "4일차" && myJubs.length === 0) return alert(`장바구니에 담아둔 문장이 없습니다!`);
                 const jubCards = myJubs.map(j => ({ kor: j.kor, eng: j.eng, chunks: [], ipa: j.ipa || "", audio: j.audio || "", start: j.start || 0, end: j.end || 0, originalEng: j.originalEng, badge: j.section, ch: chStr }));
                 deck.push(...jubCards);
@@ -2022,8 +2018,25 @@ function startConfiguredPlayAll() {
 
             if (deck.length === 0) return alert("학습할 카드가 없습니다.");
             
-            currentTaskId = `CH${chStr}-${dayLabel}`; currentChStr = chStr; currentDeck = deck;
-            launchTuktakView();
+            currentTaskId = `CH${chStr}-${dayLabel}`; 
+            currentChStr = chStr; 
+            currentDeck = deck;
+
+            // 💡 [핵심] 이전에 중간까지 하다가 멈춘 기록이 있는지 확인
+          const progressKey = "progress_" + currentTaskId;
+          currentCardIndex = 0; // 기본은 처음부터
+
+          if (!userDB.completedTasks[currentTaskId] && userDB[progressKey] !== undefined) {
+              let savedIdx = userDB[progressKey];
+              // 저장된 위치가 0보다 크고 전체 덱 길이보다 작을 때만 물어봄
+              if (savedIdx > 0 && savedIdx < deck.length) {
+                  if (confirm(`이전에 학습하던 지점이 있습니다 (${savedIdx + 1}번째 문장부터 이어하시겠습니까?)`)) {
+                      currentCardIndex = savedIdx; // 사용자가 '예'를 누르면 해당 위치로 확정!
+                  }
+              }
+          }
+
+          launchTuktakView();
         }
 
 
@@ -2077,23 +2090,22 @@ function startConfiguredPlayAll() {
 
 
         function launchTuktakView() {
-            stopNativeAudio();
-            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-            document.getElementById('view-tuktak').classList.add('active');
-            document.body.classList.add('tuktak-mode');
-            
-            // 하단 리셋/로그아웃 버튼 숨기기
-            const bottomControls = document.getElementById('bottom-app-controls');
-            if (bottomControls) bottomControls.style.display = 'none';
+          stopNativeAudio();
+          document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+          document.getElementById('view-tuktak').classList.add('active');
+          document.body.classList.add('tuktak-mode');
 
-            // 💡 [추가] 학습 모드 중에는 A4 PDF 다운로드 버튼도 숨기기
-            const pdfBtn = document.getElementById('pdf-download-btn');
-            if (pdfBtn) pdfBtn.style.display = 'none';
+          const bottomControls = document.getElementById('bottom-app-controls');
+          if (bottomControls) bottomControls.style.display = 'none';
 
-            currentCardIndex = 0;
-            warmupMicrophone(); 
-            showCard();
-        }
+          const pdfBtn = document.getElementById('pdf-download-btn');
+          if (pdfBtn) pdfBtn.style.display = 'none';
+
+          // 💡 [핵심] currentCardIndex = 0; 을 제거하여 startTuktakDaily에서 지정한 이어하기 인덱스(savedIdx)가 유지되도록 함!
+          warmupMicrophone(); 
+          showCard();
+      }
+
 
 
         function showCard() {
@@ -2107,21 +2119,18 @@ function startConfiguredPlayAll() {
             document.getElementById('tuktak-badge').innerText = card.badge;
             document.getElementById('tuktak-counter').innerText = `${currentCardIndex + 1} / ${currentDeck.length}`;
 
-            // 💡 메모 모드일 때: 작성된 메모가 있으면 메모를 띄우고, 없으면 그냥 한글 스크립트를 띄움!
+            // 메모 모드 처리
             const korEl = document.getElementById('tuktak-kor');
             if (isTuktakMemoMode) {
                 const memoKey = card.ch + "_" + card.originalEng;
                 const savedMemo = userDB.cardMemos && userDB.cardMemos[memoKey] ? userDB.cardMemos[memoKey] : "";
                 
                 if (savedMemo) {
-                    // 작성된 메모가 있을 때
                     korEl.innerHTML = `<span style="color:#495057; font-size:19px; font-weight:700; line-height:1.45; display:block; text-align:center;">${savedMemo}</span>`;
                 } else {
-                    // 💡 작성된 메모가 없을 때는 안내 문구 대신 그냥 원래 한글 스크립트 출력!
                     korEl.innerText = displayKor;
                 }
             } else {
-                // 기본 스크립트 모드
                 korEl.innerText = displayKor;
             }
             
@@ -2140,6 +2149,7 @@ function startConfiguredPlayAll() {
             if (card.ipa) { ipaEl.innerText = card.ipa; ipaEl.style.display = 'inline-block'; } 
             else { ipaEl.style.display = 'none'; }
             
+            // 이전 성취도(뱃지) 표시 여부
             const key = card.ch + "_" + card.originalEng;
             const prevStatus = userDB.cardStats[key];
             const statusBadge = document.getElementById('tuktak-status');
@@ -2154,9 +2164,13 @@ function startConfiguredPlayAll() {
                 statusBadge.style.display = 'none';
             }
 
-            if (prevStatus && currentTaskId !== null) {
+            // 💡 [최종 반영] 
+            // 1) 일일 미션(currentTaskId !== null) 중 이미 완료되어 정답 공개 조건에 맞는 경우에만 열어줌
+            // 2) 그 외(미션 처음 진입, 이어하기, 버닝모드 등)에는 이전에 어떤 평가를 했든 무조건 카드를 가려둔 채 시작!
+            if (prevStatus && currentTaskId !== null && false) { // 미션도 항상 가려진 상태로 시작하려면 false 유지 또는 조건 조정
                 isAnswerRevealed = true;
                 document.getElementById('eng-half').classList.add('revealed'); 
+                document.getElementById('eng-half').onclick = null; 
                 
                 document.getElementById('action-speak').style.display = 'none'; 
                 document.getElementById('user-record-controls').style.display = 'flex'; 
@@ -2164,6 +2178,9 @@ function startConfiguredPlayAll() {
             } else {
                 isAnswerRevealed = false;
                 document.getElementById('eng-half').classList.remove('revealed');
+                
+                // 터치 시 정답 확인 가능하도록 연결
+                document.getElementById('eng-half').onclick = revealAnswerWithoutRecording;
                 
                 const btnSpeak = document.getElementById('btn-speak-record');
                 btnSpeak.innerHTML = '🎤 녹음 시작하기';
@@ -2183,6 +2200,20 @@ function startConfiguredPlayAll() {
             
             updateJubButtonState();
         }
+
+
+        function revealAnswerWithoutRecording(e) {
+            if (isAnswerRevealed) return;
+            isAnswerRevealed = true;
+            document.getElementById('eng-half').classList.add('revealed');
+            document.getElementById('eng-half').onclick = null;
+
+            // 💡 [핵심 3] 터치로 정답을 바로 열더라도 하단에 녹음 듣기 / 재녹음 버튼이 보이도록 통일
+            document.getElementById('action-speak').style.display = 'none';
+            document.getElementById('user-record-controls').style.display = 'flex';
+            document.getElementById('card-nav-buttons').style.display = 'flex';
+        }
+
 
 
         // 🎙️ [완벽 개선] 실제 녹음 시작
@@ -2351,28 +2382,45 @@ function startConfiguredPlayAll() {
 
         // 💡 4단계: 화살표로 이전/다음 카드 이동
         function prevCard(e) {
-    if(e) e.stopPropagation();
-    stopNativeAudio(); // 💡 추가
-    if(currentCardIndex > 0) { currentCardIndex--; showCard(); }
-}
+          if (e) e.stopPropagation();
+          stopNativeAudio();
+          if (currentCardIndex > 0) { 
+              currentCardIndex--; 
+              // 진행 위치 저장
+              if (currentTaskId) {
+                  userDB["progress_" + currentTaskId] = currentCardIndex;
+                  saveDB();
+              }
+              showCard(); 
+          }
+        } 
+
 
         // 💡 [수정] UE 줍줍 팝업 검사 로직 적용
         function nextCard(e) {
-    if(e) e.stopPropagation();
-    stopNativeAudio(); // 💡 추가
+            if(e) e.stopPropagation();
+            stopNativeAudio();
 
-    const card = currentDeck[currentCardIndex];
-    if (card.badge.includes('UE')) {
-        const count = userDB.jubs.filter(j => j.originalEng === card.originalEng).length;
-        if (count === 0) {
-            document.getElementById('ue-prompt-modal').classList.add('active');
-            return; 
+            const card = currentDeck[currentCardIndex];
+            
+            // 💡 [핵심 1] 오직 '미션 2일차'를 진행 중일 때만 줍줍 필수 체크 팝업을 띄움! (버닝모드나 일반 학습에서는 절대 안 뜸)
+            if (currentTaskId && currentTaskId.includes('2일차') && card.badge.includes('UE')) {
+                const count = userDB.jubs.filter(j => j.originalEng === card.originalEng).length;
+                if (count === 0) {
+                    document.getElementById('ue-prompt-modal').classList.add('active');
+                    return; 
+                }
+            }
+
+            currentCardIndex++;
+            
+            if (currentTaskId) {
+                userDB["progress_" + currentTaskId] = currentCardIndex;
+                saveDB();
+            }
+
+            showCard();
         }
-    }
-
-    currentCardIndex++;
-    showCard();
-}
 
 
 
@@ -2431,10 +2479,15 @@ function startConfiguredPlayAll() {
         function finishTuktak() {
             if (currentTaskId) {
                 alert("🎉 일일 미션을 완료했습니다! 트래커에 'O' 표시로 기록됩니다.");
-                // 💡 단순 완료(true)가 아니라 현재 완료 시간을 저장합니다.
                 userDB.completedTasks[currentTaskId] = new Date().toISOString(); 
+                
+                // 💡 미션 완료 시 임시 저장해 둔 이어하기 위치는 삭제
+                delete userDB["progress_" + currentTaskId];
+                
                 saveDB();
-            } else { alert("🔥 버닝 모드 학습을 완료했습니다!"); }
+            } else { 
+                alert("🔥 버닝 모드 학습을 완료했습니다!"); 
+            }
             exitTuktak();
         }
 
