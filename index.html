@@ -1160,9 +1160,18 @@ body.tuktak-mode .main-container {
                 // 총 미션 개수 (12챕터 * 5일차 = 60개)
                 const totalMissionsCount = 12 * 5;
                 
+                // 💡 [요청 반영] 회원 데이터를 배열로 변환한 뒤 이름(displayName) 기준 A-Z 오름차순 정렬
+                let usersArray = [];
                 snapshot.forEach(doc => {
                     const uid = doc.id; const data = doc.data();
                     let displayName = data.userId || (data.email ? data.email.split('@')[0] : (uid === currentUserUid ? "Raina (관리자)" : `사용자 (${uid.substring(0, 6)})`));
+                    usersArray.push({ uid, data, displayName });
+                });
+
+                usersArray.sort((a, b) => a.displayName.localeCompare(b.displayName, 'en', { numeric: true, sensitivity: 'base' }));
+
+                usersArray.forEach(userObj => {
+                    const uid = userObj.uid; const data = userObj.data; const displayName = userObj.displayName;
                     let lastLoginStr = "기록 없음";
                     if (data.lastLoginAt) {
                         let d = new Date(data.lastLoginAt);
@@ -1178,7 +1187,6 @@ body.tuktak-mode .main-container {
                     const learnRate = Math.min(100, Math.round((learnedSentencesCount / totalSentencesCount) * 100));
                     const missionRate = Math.min(100, Math.round((clearedMissionsCount / totalMissionsCount) * 100));
 
-                    // 추가 통계: 줍줍 개수 및 상황 메모 작성 개수
                     const jubsCount = data.jubs ? data.jubs.length : 0;
                     const memosCount = data.cardMemos ? Object.keys(data.cardMemos).length : 0;
 
@@ -1219,7 +1227,6 @@ body.tuktak-mode .main-container {
                                 <span>📝 메모: <b style="color:#e67700;">${memosCount}개</b></span>
                             </div>
                         </div>
-                        <!-- 💡 [요청 반영] 선택초기화 / 삭제 버튼을 2열이 아닌 세로 2행 배치로 정렬 -->
                         <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0; width:90px;">
                             <button style="width:100%; padding:7px 0; background:#f59f00; color:white; border:none; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;" onclick="openAdminResetModal('${uid}')">선택초기화</button>
                             <button style="width:100%; padding:7px 0; background:#fa5252; color:white; border:none; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;" onclick="adminDeleteUser('${uid}')">삭제</button>
