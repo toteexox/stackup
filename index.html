@@ -18,6 +18,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="msapplication-TileColor" content="#99c0ff">
 
+
+<!-- 🌐 브라우저 탭 아이콘 (파비콘) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="stackup.png">
+    
+    <!-- 💡 [추가] 폰트를 HTML에서 직접 안전하게 로드합니다 -->
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
 /* =========================================================
    STACK UP - CLEAN CSS (PC FIRST)
@@ -26,7 +34,16 @@
    기능 제어용 클래스(active, revealed, completed 등) 유지
    ========================================================= */
 
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+/* CSS 최상단에 이 속성을 추가/수정해 줍니다 */
+html { background-color: var(--primary-color); }
+body { 
+    background: var(--bg-color); 
+    color: var(--text-main); 
+    min-height: 100vh;
+}
+
+
+
 
 /* 01. 색상 및 공통 설정 ------------------------------------ */
 :root {
@@ -52,12 +69,24 @@
   font-family: 'Pretendard', sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
-html { -webkit-text-size-adjust: 100%; }
+/* 1. 배경을 원래 의도하신 회색으로 원상복구 */
+/* CSS 최상단에 이 속성을 추가/수정해 줍니다 */
+html { background-color: var(--primary-color); -webkit-text-size-adjust: 100%; }
 body { 
     background: var(--bg-color); 
     color: var(--text-main); 
-    /* 만약 상단 여백까지 하늘색으로 채우고 싶다면 아래처럼 배경색 지정 가능 */
+    min-height: 100vh;
 }
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background-color: var(--primary-color);
+    z-index: 9999;
+    pointer-events: none;
+}
+
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 
@@ -205,6 +234,7 @@ body.tuktak-mode .date-simulator {
 .num-fluent.clickable { color: var(--success-color) !important; }
 .num-hesitant.clickable { color: #f59f00 !important; }
 .num-stuck.clickable { color: var(--danger-color) !important; }
+.num-untested.clickable { color: #adb5bd !important; }
 
 /* 07. 학습 / 줍줍 문장 리스트 ------------------------------ */
 .list-container { display: none; margin-top: 10px; padding: 0 4px; border: 0; background: transparent; box-shadow: none; }
@@ -284,8 +314,23 @@ body.tuktak-mode .date-simulator {
 .eng-text { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 10px; color: var(--success-color); font-size: 28px; font-weight: 800; }
 .chunk-span { padding: 2px 4px; border-radius: 6px; cursor: pointer; transition: background .15s; }
 .chunk-span:active { background: #e7f5ff; }
-.ipa-text { margin-top: 4px; padding: 6px 14px; border-radius: 10px; background: #f1f3f5; color: #868e96; font-size: 20px; font-weight: 500; cursor: pointer; transition: background .15s, color .15s; }
+/* 기존 코드에 font-family: 'Inter', sans-serif; 를 추가해 줍니다 */
+/* 기존 .ipa-text 코드를 찾아 아래로 통째로 덮어써 주세요 */
+/* 💡 꼬부기와 동일한 얇은 굵기(400)의 Inter 폰트 적용 */
+.ipa-text { 
+    margin-top: 4px; padding: 6px 14px; border-radius: 10px; 
+    background: #f1f3f5; color: #868e96; font-size: 20px; 
+    font-weight: 400; 
+    cursor: pointer; transition: background .15s, color .15s; 
+    font-family: 'Inter', sans-serif !important; /* 💡 툭탁카드 폰트 강제 적용 */
+}
 .ipa-text:hover { background: #e7f5ff; color: var(--primary-strong); }
+/* 💡 리스트(학습/줍줍) 내부 발음기호 전용 스타일 추가 */
+.list-ipa-text {
+    font-size: 13px; color: #868e96; margin-top: 3px;
+    font-family: 'Inter', sans-serif !important;
+}
+
 .eng-half:not(.revealed)::after { content: '💡 터치해서 영어 정답 확인'; position: absolute; color: #adb5bd; font-size: 15px; font-weight: 600; }
 
 /* 09. 툭탁 카드 내 음원 / 배속 / 이동 / 액션 ------------------ */
@@ -612,7 +657,7 @@ body.tuktak-mode .date-simulator {
                         <div class="eng-box">
                             <div class="text-content eng-text" id="tuktak-eng"></div>
                             <!-- 💡 발음기호 앞에 헤드폰 아이콘 노출 -->
-                            <div class="ipa-text" id="tuktak-ipa" onclick="playNativeAudio(event)" title="클릭하여 음성 듣기" style="box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-weight:700;"></div>
+                            <div class="ipa-text" id="tuktak-ipa" onclick="playNativeAudio(event)" title="클릭하여 음성 듣기" style="box-shadow: 0 2px 8px rgba(0,0,0,0.06);"></div>
                         </div>
                         <div id="card-nav-buttons">
                             <button class="nav-arrow-btn" onclick="prevCard(event)"><i class="fas fa-chevron-left"></i></button>
@@ -1342,7 +1387,12 @@ body.tuktak-mode .date-simulator {
 
 
 
-        function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function scrollToTop() { 
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+            // 💡 [핵심 수정2] 화면에 떠 있는 리스트 창이 있다면 그 안의 스크롤도 올림
+            const activeWrapper = document.querySelector('.view-section.active .list-wrapper');
+            if (activeWrapper) activeWrapper.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
         function extractCards(items, badgeTitle, audioPath, chStr) {
             let cards = [];
@@ -1369,14 +1419,12 @@ body.tuktak-mode .date-simulator {
             "5일차": { icon: "🏁", name: "완성", sub: "전체 점검", desc: "본문+줍줍 최종 복습", type: "pattern" }
         };
 
-        function renderTracker() {
-            // 💡 [핵심 수정] 가상 시뮬레이터 날짜가 아니라 '실제 현실의 컴퓨터 시스템 날짜'를 기준으로 오늘 며칠째인지 계산합니다.
-            const realToday = new Date();
+         function renderTracker() {
+            // 가상 시뮬레이터 날짜(simulatedDate)를 기준으로 오늘 며칠째인지 계산
+            const today = new Date(simulatedDate);
             let count = 0; 
             let cur = new Date("2026-10-26T12:00:00"); 
-            let end = new Date(realToday);
-            
-            // 시간 오차 방지를 위해 날짜만 비교
+            let end = new Date(today);
             cur.setHours(0,0,0,0);
             end.setHours(0,0,0,0);
 
@@ -1385,9 +1433,8 @@ body.tuktak-mode .date-simulator {
                 cur.setDate(cur.getDate() + 1); 
             }
             
-            // 스터디 시작일(10월 26일) 이전이면 -1을 주어 오늘 미션이 절대 뜨지 않게 차단합니다.
-            const currentStudyDays = realToday < new Date("2026-10-26T00:00:00") ? -1 : count;
-            const isWeekend = (realToday.getDay() === 0 || realToday.getDay() === 6);
+            const currentStudyDays = today < new Date("2026-10-26T00:00:00") ? -1 : count;
+            const isWeekend = (today.getDay() === 0 || today.getDay() === 6);
             
             const grid = document.getElementById('tracker-grid');
             const todoContainer = document.getElementById('todo-list-container');
@@ -1413,7 +1460,6 @@ body.tuktak-mode .date-simulator {
                     let isMissed = (reqDays < currentStudyDays) && !isCompleted;
                     let isFuture = reqDays > currentStudyDays;
 
-                    // 💡 [수정] 아이콘, 메인 이름(진도, 확장, 술술...), 그리고 아래 회색 작은 텍스트(sub) 구조 적용
                     cell.innerHTML = `
                         <span class="task-icon" style="font-size:16px; margin-bottom:2px;">${uiInfo.icon}</span>
                         <span style="font-weight:800; font-size:13px; color:inherit;">${uiInfo.name}</span>
@@ -1445,7 +1491,7 @@ body.tuktak-mode .date-simulator {
 
             todoContainer.innerHTML = '';
             if (isWeekend) todoContainer.innerHTML = `<div class="mission-empty">🏖️ 주말입니다! 자유롭게 학습하세요🔥</div>`;
-            else if (todayTasks.length===0) todoContainer.innerHTML = `<div class="mission-empty">오늘 미션이 없습니다.</div>`;
+            else if (todayTasks.length === 0) todoContainer.innerHTML = `<div class="mission-empty">오늘 미션이 없습니다.</div>`;
             else {
                 todayTasks.forEach(item => {
                     const cardEl = document.createElement('div'); cardEl.className = `mission-card ${item.isCompleted ? 'completed':''}`;
@@ -1461,18 +1507,34 @@ body.tuktak-mode .date-simulator {
                             completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ 완료됨</div>`;
                         }
                     }
+
+                    let taskId = `CH${item.chStr}-${item.dayLabel}`;
+                    let progressIdx = userDB["progress_" + taskId];
+                    let isInProgress = progressIdx !== undefined && progressIdx > 0;
+                    
+                    let btnHtml = '';
+                    if (item.isCompleted) {
+                        btnHtml = `<div class="play-circle-btn" style="background:#ebfbee; border-color:#8ce99a; color:#2b8a3e; font-size:20px;"><i class="fas fa-check"></i></div>`;
+                    } else if (isInProgress) {
+                        btnHtml = `<div style="display:flex; align-items:center; gap:6px; padding:10px 16px; background:#fff4e6; color:#f59f00; border-radius:20px; font-size:14px; font-weight:800; white-space:nowrap; transition:all 0.2s;">이어하기 <i class="fas fa-chevron-right"></i></div>`;
+                    } else {
+                        btnHtml = `<div style="display:flex; align-items:center; gap:6px; padding:10px 16px; background:#eef4ff; color:#339af0; border-radius:20px; font-size:14px; font-weight:800; white-space:nowrap; transition:all 0.2s;">미션 시작 <i class="fas fa-chevron-right"></i></div>`;
+                    }
+
                     cardEl.innerHTML = `
                         <div class="mission-left">
                             <div class="mission-top-row"><span class="day-pill">${item.dayLabel}</span><span class="mission-desc-green">${item.uiInfo.desc}</span></div>
                             <div class="mission-main-title">Chapter ${item.chStr} - ${item.uiInfo.name}</div>
                             ${completedAtHtml}
                         </div>
-                        <div class="play-circle-btn" style="${item.isCompleted ? 'background:#ebfbee; border-color:#8ce99a; color:#2b8a3e; font-size:20px;':''}">${item.isCompleted ? '<i class="fas fa-check"></i>' : '<i class="fas fa-play" style="margin-left:2px;"></i>'}</div>`;
+                        ${btnHtml}`;
                     todoFragment.appendChild(cardEl);
                 });
                 todoContainer.appendChild(todoFragment);
             }
         }
+
+
 
 	function getCardStatus(chStr, eng) { return userDB.cardStats[chStr + "_" + eng] || null; }
 
@@ -1484,7 +1546,7 @@ body.tuktak-mode .date-simulator {
             const tbody = document.getElementById('learn-table-body'); tbody.innerHTML = '';
             globalTempLists = [];
 
-            document.querySelector('#view-learn .stats-table thead tr').innerHTML = '<th>CH</th><th>파트</th><th>전체</th><th>술술</th><th>버벅</th><th>막힘</th>';
+            document.querySelector('#view-learn .stats-table thead tr').innerHTML = '<th>CH</th><th>파트</th><th>전체</th><th>술술</th><th>버벅</th><th>막힘</th><th>미평가</th>';
 
             for(let i=1; i<=12; i++) {
                 let chStr = i < 10 ? '0'+i : ''+i;
@@ -1496,18 +1558,20 @@ body.tuktak-mode .date-simulator {
                 let rcueCards = extractCards(d.useful_realconvo ? d.useful_realconvo.sentences : [], `RC UE ${chStr}`, d.useful_realconvo ? d.useful_realconvo.audio : "", chStr);
 
                 let chAllCards = [...msCards, ...msueCards, ...rcCards, ...rcueCards];
-                let chStats = { fluent: [], hesitant: [], stuck: [] };
+                let chStats = { fluent: [], hesitant: [], stuck: [], untested: [] };
                 chAllCards.forEach(c => {
-                    let st = getCardStatus(c.ch, c.eng); // 💡 eng로 변경
+                    let st = getCardStatus(c.ch, c.eng); 
                     if(st === '술술') chStats.fluent.push(c);
                     else if(st === '버벅') chStats.hesitant.push(c);
                     else if(st === '막힘') chStats.stuck.push(c);
+                    else chStats.untested.push(c); 
                 });
 
                 let tAllIdx = pushGlobalList(chAllCards);
                 let fAllIdx = pushGlobalList(chStats.fluent);
                 let hAllIdx = pushGlobalList(chStats.hesitant);
                 let sAllIdx = pushGlobalList(chStats.stuck);
+                let uAllIdx = pushGlobalList(chStats.untested); 
 
                 let trAll = document.createElement('tr');
                 trAll.innerHTML = `
@@ -1517,6 +1581,7 @@ body.tuktak-mode .date-simulator {
                     <td class="${chStats.fluent.length>0?'clickable num-fluent':''}" onclick="showList('learn', 'CH${chStr} 전체 - 술술', ${fAllIdx})">${chStats.fluent.length || '-'}</td>
                     <td class="${chStats.hesitant.length>0?'clickable num-hesitant':''}" onclick="showList('learn', 'CH${chStr} 전체 - 버벅', ${hAllIdx})">${chStats.hesitant.length || '-'}</td>
                     <td class="${chStats.stuck.length>0?'clickable num-stuck':''}" onclick="showList('learn', 'CH${chStr} 전체 - 막힘', ${sAllIdx})">${chStats.stuck.length || '-'}</td>
+                    <td class="${chStats.untested.length>0?'clickable num-untested':''}" onclick="showList('learn', 'CH${chStr} 전체 - 미평가', ${uAllIdx})">${chStats.untested.length || '-'}</td>
                 `;
                 tbody.appendChild(trAll);
 
@@ -1528,16 +1593,18 @@ body.tuktak-mode .date-simulator {
                 ];
 
                 parts.forEach((part) => {
-                    let stats = { fluent: [], hesitant: [], stuck: [] };
+                    let stats = { fluent: [], hesitant: [], stuck: [], untested: [] };
                     part.data.forEach(c => {
-                        let st = getCardStatus(c.ch, c.eng); // 💡 eng로 변경
+                        let st = getCardStatus(c.ch, c.eng);
                         if(st === '술술') stats.fluent.push(c);
                         else if(st === '버벅') stats.hesitant.push(c);
                         else if(st === '막힘') stats.stuck.push(c);
+                        else stats.untested.push(c);
                     });
 
                     let tIdx = pushGlobalList(part.data); let fIdx = pushGlobalList(stats.fluent);
                     let hIdx = pushGlobalList(stats.hesitant); let sIdx = pushGlobalList(stats.stuck);
+                    let uIdx = pushGlobalList(stats.untested);
 
                     let tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -1546,21 +1613,25 @@ body.tuktak-mode .date-simulator {
                         <td class="${stats.fluent.length>0?'clickable num-fluent':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} - 술술', ${fIdx})">${stats.fluent.length || '-'}</td>
                         <td class="${stats.hesitant.length>0?'clickable num-hesitant':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} - 버벅', ${hIdx})">${stats.hesitant.length || '-'}</td>
                         <td class="${stats.stuck.length>0?'clickable num-stuck':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} - 막힘', ${sIdx})">${stats.stuck.length || '-'}</td>
+                        <td class="${stats.untested.length>0?'clickable num-untested':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} - 미평가', ${uIdx})">${stats.untested.length || '-'}</td>
                     `;
                     tbody.appendChild(tr);
                 });
             }
         }
 
+
         function renderBasketTable() {
             const tbody = document.getElementById('basket-table-body'); tbody.innerHTML = '';
             globalTempLists = [];
+
+            document.querySelector('#view-basket .stats-table thead tr').innerHTML = '<th>CH</th><th>전체</th><th>술술</th><th>버벅</th><th>막힘</th><th>미평가</th>';
 
             for(let i=1; i<=12; i++) {
                 let chStr = i < 10 ? '0'+i : ''+i;
                 let jubs = userDB.jubs.filter(j => j.ch === chStr);
                 if(jubs.length === 0) {
-                    tbody.innerHTML += `<tr><td class="col-ch">${chStr}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>`;
+                    tbody.innerHTML += `<tr><td class="col-ch">${chStr}</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>`;
                     continue;
                 }
 
@@ -1569,16 +1640,18 @@ body.tuktak-mode .date-simulator {
                     originalEng: j.originalEng, badge: j.section, ch: chStr, jubId: j.id
                 }));
 
-                let bStats = { total: basketCards, fluent: [], hesitant: [], stuck: [] };
+                let bStats = { total: basketCards, fluent: [], hesitant: [], stuck: [], untested: [] };
                 basketCards.forEach(c => {
-                    let st = getCardStatus(c.ch, c.eng); // 💡 eng로 변경
+                    let st = getCardStatus(c.ch, c.eng); 
                     if(st === '술술') bStats.fluent.push(c);
                     else if(st === '버벅') bStats.hesitant.push(c);
                     else if(st === '막힘') bStats.stuck.push(c);
+                    else bStats.untested.push(c); 
                 });
 
                 let tIdx = pushGlobalList(bStats.total); let fIdx = pushGlobalList(bStats.fluent);
                 let hIdx = pushGlobalList(bStats.hesitant); let sIdx = pushGlobalList(bStats.stuck);
+                let uIdx = pushGlobalList(bStats.untested);
 
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -1587,11 +1660,11 @@ body.tuktak-mode .date-simulator {
                     <td class="${bStats.fluent.length>0?'clickable num-fluent':''}" onclick="showList('basket', 'CH${chStr} 줍줍 - 술술', ${fIdx})">${bStats.fluent.length || '-'}</td>
                     <td class="${bStats.hesitant.length>0?'clickable num-hesitant':''}" onclick="showList('basket', 'CH${chStr} 줍줍 - 버벅', ${hIdx})">${bStats.hesitant.length || '-'}</td>
                     <td class="${bStats.stuck.length>0?'clickable num-stuck':''}" onclick="showList('basket', 'CH${chStr} 줍줍 - 막힘', ${sIdx})">${bStats.stuck.length || '-'}</td>
+                    <td class="${bStats.untested.length>0?'clickable num-untested':''}" onclick="showList('basket', 'CH${chStr} 줍줍 - 미평가', ${uIdx})">${bStats.untested.length || '-'}</td>
                 `;
                 tbody.appendChild(tr);
             }
         }
-
 
 
         function showList(type, title, listIdx) {
@@ -1604,8 +1677,16 @@ body.tuktak-mode .date-simulator {
             document.getElementById(type + '-list-title').innerHTML = `<span style="display:flex; align-items:center; gap:10px;"><button onclick="hideList('${type}')" style="background:none; border:none; font-size:22px; color:#495057; cursor:pointer; padding:0; display:flex; align-items:center;"><i class="fas fa-arrow-left"></i></button>${title} (${globalTempLists[listIdx].length})</span>`;
             isListEngFirst = false; 
             document.querySelectorAll('.lang-toggle-wrapper').forEach(w => { w.classList.remove('eng-first'); w.querySelector('.opt-eng').classList.remove('active'); w.querySelector('.opt-kor').classList.add('active'); });
-            stopNativeAudio(); renderListItems(); window.scrollTo({top: 0, behavior: 'smooth'}); 
+            stopNativeAudio(); renderListItems(); 
+            
+            // 💡 [핵심 수정1] 리스트 창 자체의 스크롤을 맨 위로 고정
+            const listWrapper = document.getElementById(type + '-list-wrapper');
+            if (listWrapper) listWrapper.scrollTop = 0;
+            window.scrollTo({top: 0, behavior: 'smooth'}); 
         }
+
+
+
 
         function hideList(type) {
             stopNativeAudio(); 
@@ -1649,14 +1730,16 @@ body.tuktak-mode .date-simulator {
                     displayedEngHtml = card.eng;
                 }
 
-                if(isListEngFirst) {
+               if(isListEngFirst) {
                     html += `<div class="eng text-green">${displayedEngHtml}</div>`;
-                    if(card.ipa) html += `<div style="font-size:13px; color:#868e96; margin-top:3px;">${card.ipa}</div>`;
+                    // 💡 스타일 태그 대신 새로 만든 전용 클래스를 입혀줍니다.
+                    if(card.ipa) html += `<div class="list-ipa-text">${card.ipa}</div>`;
                     html += `<div class="kor text-gray" style="margin-top:6px;">${card.kor}</div>`;
                 } else {
                     html += `<div class="kor text-green" style="font-size:16px;">${card.kor}</div>`;
                     html += `<div class="eng text-gray" style="margin-top:6px;">${displayedEngHtml}</div>`;
-                    if(card.ipa) html += `<div style="font-size:13px; color:#868e96; margin-top:3px;">${card.ipa}</div>`;
+                    // 💡 스타일 태그 대신 새로 만든 전용 클래스를 입혀줍니다.
+                    if(card.ipa) html += `<div class="list-ipa-text">${card.ipa}</div>`;
                 }
                 
                 const memoKey = card.ch + "_" + card.eng;
@@ -1723,13 +1806,28 @@ body.tuktak-mode .date-simulator {
         function playNextInList() {
             if(!isPlayingAll) return;
             const btn = document.getElementById('btn-play-learn'); const player = document.getElementById('native-audio-player');
+            
             if(playAllIndex >= playAllList.length) {
-                if (selectedListenMode === 'listen') { currentRepeatCurrent++; if (currentRepeatCurrent < currentRepeatLimit) { playAllIndex = 0; playAllTimer = setTimeout(playNextInList, 1000); return; } }
+                if (selectedListenMode === 'listen') { 
+                    currentRepeatCurrent++; 
+                    if (currentRepeatCurrent < currentRepeatLimit) { 
+                        playAllIndex = 0; 
+                        
+                        // 💡 [핵심 수정3] 2회차 반복 시작 직전에 리스트 스크롤 최상단 복귀!
+                        const activeWrapper = document.querySelector('.view-section.active .list-wrapper');
+                        if (activeWrapper) activeWrapper.scrollTo({ top: 0, behavior: 'smooth' });
+                        
+                        playAllTimer = setTimeout(playNextInList, 1000); 
+                        return; 
+                    } 
+                }
                 isPlayingAll = false; if (player) player.ontimeupdate = null;
                 if(btn) { btn.innerText = "🎧"; btn.style.background = "#f1f3f5"; btn.style.color = "#495057"; } return;
             }
+            
             let card = playAllList[playAllIndex];
             const listWrapper = document.getElementById('learn-list-wrapper'); const items = listWrapper.children;
+            
             const highlightItem = (idx) => {
                 if (items[idx]) {
                     const wrapper = items[idx].closest('.list-wrapper');
@@ -1955,14 +2053,16 @@ body.tuktak-mode .date-simulator {
         function startTuktakDaily(chStr, dayLabel) {
             if (typeof studyData === 'undefined') return alert("⚠️ data.js 파일이 없습니다!");
             
-            // 💡 [신규] 4일차 진입 시 2일차 완료 여부 강제 검사 로직
+            let useDay2FallbackForDay4 = false;
+
+            // 💡 4일차 진입 시 2일차 완료 여부를 확인하여 미완료 시 2일차 카드를 띄워줌
             if (dayLabel === "4일차") {
                 const day2TaskId = `CH${chStr}-2일차`;
                 const isDay2Completed = userDB.completedTasks[day2TaskId] !== undefined && userDB.completedTasks[day2TaskId] !== false;
                 
                 if (!isDay2Completed) {
-                    alert("⚠️ 2일차(UE 줍줍 및 변형) 미션을 아직 인증하지 않았습니다!\n\n2일차 학습을 통해 나만의 문장을 만들어야 4일차 복습을 진행할 수 있습니다. 2일차 학습을 우선 완료해 주세요.");
-                    return; // 진입 자체를 완전히 차단함
+                    alert("💡 2일차 학습이 완료되지 않아, 4일차 미션에서 2일차 카드(UE 줍줍)를 먼저 띄워드립니다.");
+                    useDay2FallbackForDay4 = true;
                 }
             }
 
@@ -1974,13 +2074,13 @@ body.tuktak-mode .date-simulator {
                     if (chData.realconvo) deck.push(...extractCards(chData.realconvo.chat, `RC ${chStr}`, chData.realconvo.audio, chStr));
                 }
             } 
-            if (dayLabel === "2일차") {
+            if (dayLabel === "2일차" || useDay2FallbackForDay4) {
                 if (chData) {
                     if (chData.useful_mystory) deck.push(...extractCards(chData.useful_mystory.sentences, `MS UE ${chStr}`, chData.useful_mystory.audio, chStr));
                     if (chData.useful_realconvo) deck.push(...extractCards(chData.useful_realconvo.sentences, `RC UE ${chStr}`, chData.useful_realconvo.audio, chStr));
                 }
             } 
-            if (dayLabel === "4일차" || dayLabel === "5일차") {
+            if ((dayLabel === "4일차" && !useDay2FallbackForDay4) || dayLabel === "5일차") {
                 const myJubs = userDB.jubs.filter(j => j.ch === chStr);
                 if (dayLabel === "4일차" && myJubs.length === 0) return alert(`장바구니에 담아둔 문장이 없습니다!`);
                 const jubCards = myJubs.map(j => ({ kor: j.kor, eng: j.eng, chunks: [], ipa: j.ipa || "", audio: j.audio || "", start: j.start || 0, end: j.end || 0, originalEng: j.originalEng, badge: j.section, ch: chStr }));
@@ -2019,6 +2119,9 @@ body.tuktak-mode .date-simulator {
 
             launchTuktakView();
         }
+
+
+
 
         function startBurningMode() {
             const list = globalTempLists[currentListIdx];
@@ -2059,24 +2162,23 @@ body.tuktak-mode .date-simulator {
             const btn = document.getElementById('btn-random-play');
             
             if (isRandomMode) {
-                btn.classList.add('active');
-                if (orderedDeck.length === 0) orderedDeck = [...currentDeck]; // 첫 셔플 시 원본 저장
+                if (btn) btn.classList.add('active');
+                if (orderedDeck.length === 0) orderedDeck = [...currentDeck]; 
                 
-                // 덱 무작위 셔플 (Fisher-Yates)
+                // 💡 [핵심 수정4] 덱을 완벽하게 섞고, 화면에 섞였다는 알림을 띄워줌
                 let shuffled = [...orderedDeck];
                 for (let i = shuffled.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
                 }
                 currentDeck = shuffled;
+                showAutoPlayNotice("🔀 카드를 무작위로 학습합니다.");
             } else {
-                btn.classList.remove('active');
-                if (orderedDeck.length > 0) {
-                    currentDeck = [...orderedDeck];
-                }
+                if (btn) btn.classList.remove('active');
+                if (orderedDeck.length > 0) currentDeck = [...orderedDeck];
+                showAutoPlayNotice("➡️ 카드를 순서대로 학습합니다.");
             }
             
-            // 랜덤 활성/비활성 시 항상 처음(0)부터 다시 시작
             currentCardIndex = 0; maxReachedIndex = 0;
             if (currentTaskId) { userDB["progress_" + currentTaskId] = 0; saveDB(); }
             showCard();
@@ -2126,7 +2228,7 @@ body.tuktak-mode .date-simulator {
             if (currentCardIndex >= currentDeck.length) { finishTuktak(); return; }
 
             const card = currentDeck[currentCardIndex];
-            const cardKey = card.ch + "_" + card.eng; // 💡 고유 키를 eng로 변경!
+            const cardKey = card.ch + "_" + card.eng; 
 
             document.getElementById('tuktak-badge').innerText = card.badge;
             document.getElementById('tuktak-counter').innerText = `${currentCardIndex + 1} / ${currentDeck.length}`;
@@ -2173,8 +2275,8 @@ body.tuktak-mode .date-simulator {
 
             let isPastCard = currentCardIndex < maxReachedIndex;
 
-            // 💡 [핵심 수정] 버닝모드(currentTaskId === null)일 때는 이전 평가 기록이 있어도 무조건 가린 상태로 시작합니다!
-            if (isPastCard || (prevStatus && currentTaskId !== null)) {
+            // 💡 [수정됨] 과거 평가 기록과 상관없이, '이번 미션/학습 세션에서 이미 푼 카드'만 열어둡니다.
+            if (isPastCard) {
                 isAnswerRevealed = true;
                 document.getElementById('eng-half').classList.add('revealed');
                 document.getElementById('eng-half').onclick = null;
