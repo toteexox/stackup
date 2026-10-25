@@ -1317,8 +1317,10 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
             const currentStudyDays = end < new Date("2026-10-26T12:00:00") ? -1 : count;
             const isWeekend = (simulatedDate.getDay() === 0 || simulatedDate.getDay() === 6);
             
-            const grid = document.getElementById('tracker-grid'); const todoContainer = document.getElementById('todo-list-container');
-            const gridFragment = document.createDocumentFragment(); const todoFragment = document.createDocumentFragment();
+            const grid = document.getElementById('tracker-grid');
+            const todoContainer = document.getElementById('todo-list-container');
+            const gridFragment = document.createDocumentFragment();
+            const todoFragment = document.createDocumentFragment();
             let todayTasks = [];
 
             for(let ch=1; ch<=12; ch++) {
@@ -1329,12 +1331,17 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
 
                 Object.keys(taskOffsets).forEach(dayLabel => {
                     let reqDays = chStartOffset + taskOffsets[dayLabel];
-                    let taskId = `CH${chStr}-${dayLabel}`; let uiInfo = taskLabels[dayLabel];
+                    let taskId = `CH${chStr}-${dayLabel}`;
+                    let uiInfo = taskLabels[dayLabel];
                     let cell = document.createElement('div'); cell.className = `task-cell ${uiInfo.type}-day`;
+                    
                     let completedVal = userDB.completedTasks[taskId];
                     let isCompleted = completedVal !== undefined && completedVal !== false;
                     let isToday = (!isWeekend && reqDays === currentStudyDays);
                     let isMissed = (reqDays < currentStudyDays) && !isCompleted;
+                    
+                    // 💡 [신규] 미래 과제인지 판별
+                    let isFuture = reqDays > currentStudyDays;
 
                     cell.innerHTML = `<span class="task-icon">${uiInfo.icon}</span><span>${uiInfo.name}</span>`;
                     if (isToday) todayTasks.push({ chStr, dayLabel, uiInfo, isCompleted, completedVal });
@@ -1344,14 +1351,25 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                     else if (isMissed) cell.classList.add('missed');
                     else cell.style.opacity = '0.45';
 
-                    cell.onclick = () => startTuktakDaily(chStr, dayLabel);
+                    // 💡 [신규] 미래 과제 클릭 시 차단 알림
+                    cell.onclick = () => {
+                        if (isFuture) {
+                            alert("⏳ 아직 오픈되지 않은 미션입니다.\n지정된 날짜 이후에 학습할 수 있습니다!");
+                            return;
+                        }
+                        startTuktakDaily(chStr, dayLabel);
+                    };
                     taskGrid.appendChild(cell);
                 });
-                box.appendChild(taskGrid); gridFragment.appendChild(box);
+                box.appendChild(taskGrid); 
+                gridFragment.appendChild(box);
             }
-            grid.innerHTML = ''; grid.appendChild(gridFragment); 
+
+            grid.innerHTML = '';
+            grid.appendChild(gridFragment);
+
             todoContainer.innerHTML = '';
-            if (isWeekend) todoContainer.innerHTML = `<div class="mission-empty">🎉 주말입니다! 재학습을 진행하세요.</div>`;
+            if (isWeekend) todoContainer.innerHTML = `<div class="mission-empty">🏖️ 주말입니다! 자유롭게 학습하세요🔥</div>`;
             else if (todayTasks.length===0) todoContainer.innerHTML = `<div class="mission-empty">오늘 미션이 없습니다.</div>`;
             else {
                 todayTasks.forEach(item => {
@@ -1361,10 +1379,20 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                     if (item.isCompleted) {
                         if (typeof item.completedVal === 'string') {
                             let d = new Date(item.completedVal);
-                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ ${d.getMonth() + 1}월 ${d.getDate()}일 ${d.getHours()}:${d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes()} 학습 완료</div>`;
-                        } else { completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ 완료됨</div>`; }
+                            let m = d.getMonth() + 1; let day = d.getDate();
+                            let h = d.getHours(); let min = d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes();
+                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ ${m}월 ${day}일 ${h}:${min} 학습 완료</div>`;
+                        } else {
+                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ 완료됨</div>`;
+                        }
                     }
-                    cardEl.innerHTML = `<div class="mission-left"><div class="mission-top-row"><span class="day-pill">${item.dayLabel}</span><span class="mission-desc-green">${item.uiInfo.desc}</span></div><div class="mission-main-title">Chapter ${item.chStr} - ${item.uiInfo.name}</div>${completedAtHtml}</div><div class="play-circle-btn" style="${item.isCompleted ? 'background:#ebfbee; border-color:#8ce99a; color:#2b8a3e; font-size:20px;':''}">${item.isCompleted ? '<i class="fas fa-check"></i>' : '<i class="fas fa-play" style="margin-left:2px;"></i>'}</div>`;
+                    cardEl.innerHTML = `
+                        <div class="mission-left">
+                            <div class="mission-top-row"><span class="day-pill">${item.dayLabel}</span><span class="mission-desc-green">${item.uiInfo.desc}</span></div>
+                            <div class="mission-main-title">Chapter ${item.chStr} - ${item.uiInfo.name}</div>
+                            ${completedAtHtml}
+                        </div>
+                        <div class="play-circle-btn" style="${item.isCompleted ? 'background:#ebfbee; border-color:#8ce99a; color:#2b8a3e; font-size:20px;':''}">${item.isCompleted ? '<i class="fas fa-check"></i>' : '<i class="fas fa-play" style="margin-left:2px;"></i>'}</div>`;
                     todoFragment.appendChild(cardEl);
                 });
                 todoContainer.appendChild(todoFragment);
@@ -1798,6 +1826,18 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
 
         function startTuktakDaily(chStr, dayLabel) {
             if (typeof studyData === 'undefined') return alert("⚠️ data.js 파일이 없습니다!");
+            
+            // 💡 [신규] 4일차 진입 시 2일차 완료 여부 강제 검사 로직
+            if (dayLabel === "4일차") {
+                const day2TaskId = `CH${chStr}-2일차`;
+                const isDay2Completed = userDB.completedTasks[day2TaskId] !== undefined && userDB.completedTasks[day2TaskId] !== false;
+                
+                if (!isDay2Completed) {
+                    alert("⚠️ 2일차(UE 줍줍 및 변형) 미션을 아직 인증하지 않았습니다!\n\n2일차 학습을 통해 나만의 문장을 만들어야 4일차 복습을 진행할 수 있습니다. 2일차 학습을 우선 완료해 주세요.");
+                    return; // 진입 자체를 완전히 차단함
+                }
+            }
+
             const chData = studyData[chStr]; let deck = [];
 
             if (dayLabel === "1일차" || dayLabel === "3일차" || dayLabel === "5일차") {
@@ -1839,10 +1879,10 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                 if (savedIdx > 0 && savedIdx < deck.length) {
                     if (confirm(`이전에 학습하던 지점이 있습니다 (${savedIdx + 1}번째 문장부터 이어하시겠습니까?)`)) {
                         currentCardIndex = savedIdx; 
-                        maxReachedIndex = savedIdx; // 💡 이어하기 수락 시 최고 진도 복구
+                        maxReachedIndex = savedIdx;
                     } else {
                         currentCardIndex = 0; 
-                        maxReachedIndex = 0; // 💡 거절 시 처음부터 다시 깨도록 초기화
+                        maxReachedIndex = 0;
                     }
                 } else {
                     maxReachedIndex = savedIdx || 0;
@@ -1851,7 +1891,6 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
 
             launchTuktakView();
         }
-
 
         function startBurningMode() {
             const list = globalTempLists[currentListIdx];
