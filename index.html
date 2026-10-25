@@ -237,7 +237,16 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
 .tuktak-toggle-option { z-index: 1; flex: 1; color: #343a40; font-size: 11px; font-weight: 800; text-align: center; pointer-events: none; transition: color .25s; }
 .tuktak-toggle-option.active { color: #fff !important; font-weight: 900; }
 .btn-auto-play { display: flex; justify-content: center; align-items: center; width: 32px; height: 30px; border: 0; border-radius: 16px; background: #e9ecef; color: #868e96; font-size: 14px; transition: background .2s, color .2s; }
-.btn-auto-play.active { background: var(--primary-strong); color: #fff; box-shadow: 0 2px 6px rgba(51,154,240,.3); }
+.btn-auto-play.active { 
+    background: var(--primary-strong); 
+    color: #fff; 
+    animation: autoplayBlink 1.5s infinite; 
+}
+@keyframes autoplayBlink {
+    0% { opacity: 1; box-shadow: 0 0 0 0 rgba(51, 154, 240, 0.6); }
+    50% { opacity: 0.65; box-shadow: 0 0 0 8px rgba(51, 154, 240, 0); transform: scale(0.95); }
+    100% { opacity: 1; box-shadow: 0 0 0 0 rgba(51, 154, 240, 0); transform: scale(1); }
+}
 .tuktak-container { display: flex; flex-direction: column; width: 100%; max-width: 100%; margin-bottom: 20px; overflow: hidden; border: 2px solid var(--primary-color); border-radius: 24px; background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.06); }
 .tuktak-card { position: relative; display: flex; flex-direction: column; height: 500px; }
 .card-half { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; text-align: center; }
@@ -754,6 +763,7 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                 <h3 style="margin:0; font-size:18px; color:#1e293b;">👑 관리자 회원 관리</h3>
                 <button onclick="closeAdminModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color:#868e96;"><i class="fas fa-times"></i></button>
             </div>
+            
             <div style="background:#f8f9fa; padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid #e9ecef; display:flex; flex-direction:column; gap:10px;">
                 <div style="font-weight:800; font-size:14px; color:#1e293b;">➕ 새 회원 아이디 생성</div>
                 <input type="text" id="new-user-id" class="login-input" placeholder="아이디 (예: Koham)" style="padding:12px; font-size:14px;">
@@ -761,15 +771,51 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                 <button style="width:100%; padding:12px; background:#2b8a3e; color:white; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:15px;" onclick="adminCreateUser()">회원 생성하기</button>
                 <div id="admin-create-error" style="color:#fa5252; font-size:12px; margin-top:2px;"></div>
             </div>
+
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <div style="font-weight:800; font-size:14px; color:#1e293b;">👥 회원 목록 및 관리</div>
-                <button style="padding:6px 10px; background:#e03131; color:white; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer;" onclick="adminResetAllMissions()">
-                    🔄 전체 회원 미션 초기화
+                <!-- 💡 [수정] 바로 초기화 함수를 부르지 않고, 복수 선택 모달을 띄우도록 변경 -->
+                <button style="padding:6px 10px; background:#e03131; color:white; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer;" onclick="openAdminResetModal('ALL_USERS')">
+                    🔄 전체 초기화
                 </button>
             </div>
             <div id="admin-user-list" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
         </div>
     </div>
+
+    <!-- 💡 [신규] 관리자 전용 데이터 선택 초기화 모달 -->
+    <div class="modal-overlay" id="admin-reset-modal">
+        <div class="edit-modal" style="width: 90%; max-width: 320px; text-align:left;">
+            <h3 style="margin-bottom:14px; font-size:18px; color:#1e293b;" id="admin-reset-title">🔄 데이터 선택 초기화</h3>
+            <p style="font-size:13px; color:#64748b; margin-bottom:16px;">초기화할 항목을 선택해주세요. (복수 선택 가능)</p>
+
+            <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="reset-opt-mission" style="width:18px; height:18px;" checked>
+                    <span style="font-size:14px; font-weight:700; color:#495057;">🔥 미션 현황</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="reset-opt-stats" style="width:18px; height:18px;">
+                    <span style="font-size:14px; font-weight:700; color:#495057;">📊 성취도</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="reset-opt-jubs" style="width:18px; height:18px;">
+                    <span style="font-size:14px; font-weight:700; color:#495057;">🧺 줍줍 문장</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="reset-opt-memos" style="width:18px; height:18px;">
+                    <span style="font-size:14px; font-weight:700; color:#495057;">📝 상황 메모</span>
+                </label>
+            </div>
+
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeAdminResetModal()">취소</button>
+                <button class="btn-add-new" style="background:#f59f00;" id="btn-execute-reset" onclick="executeAdminReset()">초기화 실행</button>
+            </div>
+        </div>
+    </div>
+
+
 
     <!-- 오디오 플레이어 -->
     <audio id="native-audio-player"></audio>
@@ -993,6 +1039,7 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                 listContainer.innerHTML = '';
                 if (snapshot.empty) return listContainer.innerHTML = '<div style="text-align:center; color:#868e96; padding:20px;">등록된 회원이 없습니다.</div>';
                 let simDateObj = new Date(simulatedDate); simDateObj.setHours(12, 0, 0, 0);
+                
                 snapshot.forEach(doc => {
                     const uid = doc.id; const data = doc.data();
                     let displayName = data.userId || (data.email ? data.email.split('@')[0] : (uid === currentUserUid ? "Raina (관리자)" : `사용자 (${uid.substring(0, 6)})`));
@@ -1004,6 +1051,7 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                     const completedMap = data.completedTasks || {};
                     const completedCount = Object.keys(completedMap).filter(k => completedMap[k] !== false).length;
                     let totalPenalties = 0;
+                    
                     for (let ch = 1; ch <= 12; ch++) {
                         let chStr = ch < 10 ? '0'+ch : ''+ch; let chStartOffset = (ch - 1) * 2;
                         Object.keys(taskOffsets).forEach(dayLabel => {
@@ -1023,6 +1071,7 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                             }
                         });
                     }
+                    
                     let item = document.createElement('div');
                     item.style.cssText = "background:#f1f3f5; padding:14px 16px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;";
                     item.innerHTML = `
@@ -1038,7 +1087,8 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                             </div>
                         </div>
                         <div style="display:flex; gap:6px; flex-shrink:0;">
-                            <button style="padding:8px 12px; background:#f59f00; color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;" onclick="adminResetUser('${uid}')">초기화</button>
+                            <!-- 💡 [수정] 개별 회원 선택 시에도 통합된 선택 초기화 모달 띄우기 -->
+                            <button style="padding:8px 12px; background:#f59f00; color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;" onclick="openAdminResetModal('${uid}')">선택초기화</button>
                             <button style="padding:8px 12px; background:#fa5252; color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;" onclick="adminDeleteUser('${uid}')">삭제</button>
                         </div>
                     `;
@@ -1047,48 +1097,131 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
             } catch (err) { listContainer.innerHTML = '<div style="text-align:center; color:#fa5252; padding:20px;">권한 오류가 발생했습니다.</div>'; }
         }
 
-        async function adminResetUser(uid) {
-            if(confirm("이 회원의 미션 인증 기록과 중간 이어하기 기록을 초기화하시겠습니까?")) {
-                try {
-                    const docRef = db.collection("studyUsers").doc(uid);
-                    const docSnap = await docRef.get({ source: 'server' }).catch(() => docRef.get());
-                    if (docSnap.exists) {
-                        let data = docSnap.data();
-                        let updatePayload = { completedTasks: {} };
-                        Object.keys(data).forEach(key => { if (key.startsWith('progress_')) updatePayload[key] = firebase.firestore.FieldValue.delete(); });
-                        await docRef.update(updatePayload);
-                    }
-                    if (uid === currentUserUid) {
-                        Object.keys(userDB).forEach(key => { if (key.startsWith('progress_')) delete userDB[key]; });
-                        userDB.completedTasks = {};
-                        localStorage.setItem('stackup_cache_' + currentUserUid, JSON.stringify(userDB));
-                        updateDateDisplay(); 
-                    }
-                    alert("초기화 완료"); renderAdminUserList();
-                } catch (err) { alert("오류: " + err.message); }
+        // =========================================================================
+        // 🔄 데이터 선택 초기화 제어 (개별 & 전체 통합 모달 엔진)
+        // =========================================================================
+        let targetResetUid = null;
+        
+        function openAdminResetModal(uid) {
+            targetResetUid = uid;
+            
+            // 모달 열 때 체크박스 기본값 세팅 (미션만 기본 체크)
+            document.getElementById('reset-opt-mission').checked = true;
+            document.getElementById('reset-opt-stats').checked = false;
+            document.getElementById('reset-opt-jubs').checked = false;
+            document.getElementById('reset-opt-memos').checked = false;
+            
+            // 전체 초기화 vs 개별 초기화 UI 분기
+            const titleEl = document.getElementById('admin-reset-title');
+            if (uid === 'ALL_USERS') {
+                titleEl.innerHTML = '⚠️ <span style="color:#e03131;">전체 회원</span> 데이터 초기화';
+            } else {
+                titleEl.innerHTML = '🔄 특정 회원 데이터 초기화';
             }
+
+            document.getElementById('admin-reset-modal').classList.add('active');
+        }
+        
+        function closeAdminResetModal() {
+            targetResetUid = null;
+            document.getElementById('admin-reset-modal').classList.remove('active');
         }
 
-        async function adminResetAllMissions() {
-            if(!isAdmin) return;
-            if(confirm("모든 회원의 미션 기록을 일괄 초기화하시겠습니까?")) {
-                try {
+        async function executeAdminReset() {
+            if (!targetResetUid) return;
+            
+            const optMission = document.getElementById('reset-opt-mission').checked;
+            const optStats = document.getElementById('reset-opt-stats').checked;
+            const optJubs = document.getElementById('reset-opt-jubs').checked;
+            const optMemos = document.getElementById('reset-opt-memos').checked;
+
+            if (!optMission && !optStats && !optJubs && !optMemos) {
+                return alert("초기화할 항목을 1개 이상 선택해주세요.");
+            }
+            
+            const isAll = targetResetUid === 'ALL_USERS';
+            const confirmMsg = isAll 
+                ? "⚠️ 정말 [모든 회원]의 선택 항목을 일괄 초기화하시겠습니까?\n(이 작업은 절대 되돌릴 수 없습니다!)"
+                : "선택한 항목들을 정말 초기화하시겠습니까?\n(이 작업은 되돌릴 수 없습니다.)";
+                
+            if (!confirm(confirmMsg)) return;
+
+            const executeBtn = document.getElementById('btn-execute-reset');
+            const origText = executeBtn.innerText;
+            executeBtn.innerText = "초기화 진행 중...";
+            executeBtn.disabled = true;
+
+            try {
+                if (isAll) {
+                    // 전체 회원 일괄 초기화
                     const snapshot = await db.collection("studyUsers").get({ source: 'server' }).catch(() => db.collection("studyUsers").get());
                     const batch = db.batch();
+                    
                     snapshot.forEach(doc => {
-                        let data = doc.data(); let updatePayload = { completedTasks: {} };
-                        Object.keys(data).forEach(key => { if (key.startsWith('progress_')) updatePayload[key] = firebase.firestore.FieldValue.delete(); });
+                        let data = doc.data();
+                        let updatePayload = {};
+                        if (optMission) {
+                            updatePayload.completedTasks = {};
+                            Object.keys(data).forEach(key => { if (key.startsWith('progress_')) updatePayload[key] = firebase.firestore.FieldValue.delete(); });
+                        }
+                        if (optStats) updatePayload.cardStats = {};
+                        if (optJubs) updatePayload.jubs = [];
+                        if (optMemos) updatePayload.cardMemos = {};
+                        
                         batch.update(doc.ref, updatePayload);
                     });
                     await batch.commit();
-                    Object.keys(userDB).forEach(key => { if (key.startsWith('progress_')) delete userDB[key]; });
-                    userDB.completedTasks = {};
+                    
+                } else {
+                    // 특정 회원 개별 초기화
+                    const docRef = db.collection("studyUsers").doc(targetResetUid);
+                    const docSnap = await docRef.get({ source: 'server' }).catch(() => docRef.get());
+                    
+                    if (docSnap.exists) {
+                        let data = docSnap.data();
+                        let updatePayload = {};
+                        if (optMission) {
+                            updatePayload.completedTasks = {};
+                            Object.keys(data).forEach(key => { if (key.startsWith('progress_')) updatePayload[key] = firebase.firestore.FieldValue.delete(); });
+                        }
+                        if (optStats) updatePayload.cardStats = {};
+                        if (optJubs) updatePayload.jubs = [];
+                        if (optMemos) updatePayload.cardMemos = {};
+                        
+                        await docRef.update(updatePayload);
+                    }
+                }
+
+                // 현재 로그인 중인 관리자 본인이 초기화 대상에 포함되었을 경우, 즉시 로컬 메모리 갱신
+                if (isAll || targetResetUid === currentUserUid) {
+                    if (optMission) {
+                        Object.keys(userDB).forEach(key => { if (key.startsWith('progress_')) delete userDB[key]; });
+                        userDB.completedTasks = {};
+                    }
+                    if (optStats) userDB.cardStats = {};
+                    if (optJubs) userDB.jubs = [];
+                    if (optMemos) userDB.cardMemos = {};
+                    
                     localStorage.setItem('stackup_cache_' + currentUserUid, JSON.stringify(userDB));
-                    updateDateDisplay(); alert("전체 미션 초기화 완료!"); renderAdminUserList();
-                } catch (err) { alert("오류: " + err.message); }
+                    updateDateDisplay(); 
+                }
+
+                executeBtn.innerText = origText;
+                executeBtn.disabled = false;
+                
+                alert(isAll ? "🎉 모든 회원의 선택한 항목이 초기화되었습니다!" : "선택한 항목이 깔끔하게 초기화되었습니다.");
+                closeAdminResetModal();
+                renderAdminUserList();
+
+            } catch (err) {
+                executeBtn.innerText = origText;
+                executeBtn.disabled = false;
+                alert("초기화 중 오류가 발생했습니다: " + err.message); 
             }
         }
+        
 
+       
         async function adminDeleteUser(uid) {
             if(uid === currentUserUid) return alert("본인 계정은 삭제할 수 없습니다.");
             if(confirm("이 회원을 완전히 삭제할까요?")) {
@@ -1238,6 +1371,8 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
             }
         }
 
+	function getCardStatus(chStr, eng) { return userDB.cardStats[chStr + "_" + eng] || null; }
+
         // =========================================================================
         // 6. 학습 / 줍줍 리스트 렌더링
         // =========================================================================
@@ -1245,10 +1380,12 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
             if (typeof studyData === 'undefined') return;
             const tbody = document.getElementById('learn-table-body'); tbody.innerHTML = '';
             globalTempLists = [];
+
             document.querySelector('#view-learn .stats-table thead tr').innerHTML = '<th>CH</th><th>파트</th><th>전체</th><th>술술</th><th>버벅</th><th>막힘</th>';
 
             for(let i=1; i<=12; i++) {
-                let chStr = i < 10 ? '0'+i : ''+i; const d = studyData[chStr]; if(!d) continue;
+                let chStr = i < 10 ? '0'+i : ''+i;
+                const d = studyData[chStr]; if(!d) continue;
 
                 let msCards = extractCards(d.mystory ? d.mystory.sentences : [], `MS ${chStr}`, d.mystory ? d.mystory.audio : "", chStr);
                 let msueCards = extractCards(d.useful_mystory ? d.useful_mystory.sentences : [], `MS UE ${chStr}`, d.useful_mystory ? d.useful_mystory.audio : "", chStr);
@@ -1258,24 +1395,55 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                 let chAllCards = [...msCards, ...msueCards, ...rcCards, ...rcueCards];
                 let chStats = { fluent: [], hesitant: [], stuck: [] };
                 chAllCards.forEach(c => {
-                    let st = getCardStatus(c.ch, c.originalEng);
-                    if(st === '술술') chStats.fluent.push(c); else if(st === '버벅') chStats.hesitant.push(c); else if(st === '막힘') chStats.stuck.push(c);
+                    let st = getCardStatus(c.ch, c.eng); // 💡 eng로 변경
+                    if(st === '술술') chStats.fluent.push(c);
+                    else if(st === '버벅') chStats.hesitant.push(c);
+                    else if(st === '막힘') chStats.stuck.push(c);
                 });
 
-                let tAllIdx = pushGlobalList(chAllCards); let fAllIdx = pushGlobalList(chStats.fluent);
-                let hAllIdx = pushGlobalList(chStats.hesitant); let sAllIdx = pushGlobalList(chStats.stuck);
+                let tAllIdx = pushGlobalList(chAllCards);
+                let fAllIdx = pushGlobalList(chStats.fluent);
+                let hAllIdx = pushGlobalList(chStats.hesitant);
+                let sAllIdx = pushGlobalList(chStats.stuck);
 
                 let trAll = document.createElement('tr');
-                trAll.innerHTML = `<td rowspan="5" class="col-ch">${chStr}</td><td class="col-part" style="background:#f1f3f5; border-radius:6px;">총합</td><td class="${chAllCards.length>0?'clickable':''}" onclick="showList('learn', 'CH${chStr} 전체', ${tAllIdx})">${chAllCards.length || '-'}</td><td class="${chStats.fluent.length>0?'clickable num-fluent':''}" onclick="showList('learn', 'CH${chStr} 전체 - 술술', ${fAllIdx})">${chStats.fluent.length || '-'}</td><td class="${chStats.hesitant.length>0?'clickable num-hesitant':''}" onclick="showList('learn', 'CH${chStr} 전체 - 버벅', ${hAllIdx})">${chStats.hesitant.length || '-'}</td><td class="${chStats.stuck.length>0?'clickable num-stuck':''}" onclick="showList('learn', 'CH${chStr} 전체 - 막힘', ${sAllIdx})">${chStats.stuck.length || '-'}</td>`;
+                trAll.innerHTML = `
+                    <td rowspan="5" class="col-ch">${chStr}</td>
+                    <td class="col-part" style="background:#f1f3f5; border-radius:6px;">총합</td>
+                    <td class="${chAllCards.length>0?'clickable':''}" onclick="showList('learn', 'CH${chStr} 전체', ${tAllIdx})">${chAllCards.length || '-'}</td>
+                    <td class="${chStats.fluent.length>0?'clickable num-fluent':''}" onclick="showList('learn', 'CH${chStr} 전체 - 술술', ${fAllIdx})">${chStats.fluent.length || '-'}</td>
+                    <td class="${chStats.hesitant.length>0?'clickable num-hesitant':''}" onclick="showList('learn', 'CH${chStr} 전체 - 버벅', ${hAllIdx})">${chStats.hesitant.length || '-'}</td>
+                    <td class="${chStats.stuck.length>0?'clickable num-stuck':''}" onclick="showList('learn', 'CH${chStr} 전체 - 막힘', ${sAllIdx})">${chStats.stuck.length || '-'}</td>
+                `;
                 tbody.appendChild(trAll);
 
-                const parts = [ { id: "MS", label: "MS", data: msCards }, { id: "MS UE", label: "MS UE", data: msueCards }, { id: "RC", label: "RC", data: rcCards }, { id: "RC UE", label: "RC UE", data: rcueCards } ];
+                const parts = [
+                    { id: "MS", label: "MS", data: msCards },
+                    { id: "MS UE", label: "MS UE", data: msueCards },
+                    { id: "RC", label: "RC", data: rcCards },
+                    { id: "RC UE", label: "RC UE", data: rcueCards }
+                ];
+
                 parts.forEach((part) => {
                     let stats = { fluent: [], hesitant: [], stuck: [] };
-                    part.data.forEach(c => { let st = getCardStatus(c.ch, c.originalEng); if(st === '술술') stats.fluent.push(c); else if(st === '버벅') stats.hesitant.push(c); else if(st === '막힘') stats.stuck.push(c); });
-                    let tIdx = pushGlobalList(part.data); let fIdx = pushGlobalList(stats.fluent); let hIdx = pushGlobalList(stats.hesitant); let sIdx = pushGlobalList(stats.stuck);
+                    part.data.forEach(c => {
+                        let st = getCardStatus(c.ch, c.eng); // 💡 eng로 변경
+                        if(st === '술술') stats.fluent.push(c);
+                        else if(st === '버벅') stats.hesitant.push(c);
+                        else if(st === '막힘') stats.stuck.push(c);
+                    });
+
+                    let tIdx = pushGlobalList(part.data); let fIdx = pushGlobalList(stats.fluent);
+                    let hIdx = pushGlobalList(stats.hesitant); let sIdx = pushGlobalList(stats.stuck);
+
                     let tr = document.createElement('tr');
-                    tr.innerHTML = `<td class="col-part" style="border-top:1px dashed #e9ecef;">${part.label}</td><td class="${part.data.length>0?'clickable':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} 전체', ${tIdx})">${part.data.length || '-'}</td><td class="${stats.fluent.length>0?'clickable num-fluent':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} - 술술', ${fIdx})">${stats.fluent.length || '-'}</td><td class="${stats.hesitant.length>0?'clickable num-hesitant':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} - 버벅', ${hIdx})">${stats.hesitant.length || '-'}</td><td class="${stats.stuck.length>0?'clickable num-stuck':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} - 막힘', ${sIdx})">${stats.stuck.length || '-'}</td>`;
+                    tr.innerHTML = `
+                        <td class="col-part" style="border-top:1px dashed #e9ecef;">${part.label}</td>
+                        <td class="${part.data.length>0?'clickable':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} 전체', ${tIdx})">${part.data.length || '-'}</td>
+                        <td class="${stats.fluent.length>0?'clickable num-fluent':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} - 술술', ${fIdx})">${stats.fluent.length || '-'}</td>
+                        <td class="${stats.hesitant.length>0?'clickable num-hesitant':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} - 버벅', ${hIdx})">${stats.hesitant.length || '-'}</td>
+                        <td class="${stats.stuck.length>0?'clickable num-stuck':''}" style="border-top:1px dashed #e9ecef;" onclick="showList('learn', 'CH${chStr} ${part.label} - 막힘', ${sIdx})">${stats.stuck.length || '-'}</td>
+                    `;
                     tbody.appendChild(tr);
                 });
             }
@@ -1284,20 +1452,44 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
         function renderBasketTable() {
             const tbody = document.getElementById('basket-table-body'); tbody.innerHTML = '';
             globalTempLists = [];
+
             for(let i=1; i<=12; i++) {
-                let chStr = i < 10 ? '0'+i : ''+i; let jubs = userDB.jubs.filter(j => j.ch === chStr);
-                if(jubs.length === 0) { tbody.innerHTML += `<tr><td class="col-ch">${chStr}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>`; continue; }
+                let chStr = i < 10 ? '0'+i : ''+i;
+                let jubs = userDB.jubs.filter(j => j.ch === chStr);
+                if(jubs.length === 0) {
+                    tbody.innerHTML += `<tr><td class="col-ch">${chStr}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>`;
+                    continue;
+                }
 
-                let basketCards = jubs.map(j => ({ kor: j.kor, eng: j.eng, ipa: j.ipa||"", audio: j.audio||"", start: j.start||0, end: j.end||0, originalEng: j.originalEng, badge: j.section, ch: chStr, jubId: j.id }));
+                let basketCards = jubs.map(j => ({
+                    kor: j.kor, eng: j.eng, ipa: j.ipa||"", audio: j.audio||"", start: j.start||0, end: j.end||0,
+                    originalEng: j.originalEng, badge: j.section, ch: chStr, jubId: j.id
+                }));
+
                 let bStats = { total: basketCards, fluent: [], hesitant: [], stuck: [] };
-                basketCards.forEach(c => { let st = getCardStatus(c.ch, c.originalEng); if(st === '술술') bStats.fluent.push(c); else if(st === '버벅') bStats.hesitant.push(c); else if(st === '막힘') bStats.stuck.push(c); });
+                basketCards.forEach(c => {
+                    let st = getCardStatus(c.ch, c.eng); // 💡 eng로 변경
+                    if(st === '술술') bStats.fluent.push(c);
+                    else if(st === '버벅') bStats.hesitant.push(c);
+                    else if(st === '막힘') bStats.stuck.push(c);
+                });
 
-                let tIdx = pushGlobalList(bStats.total); let fIdx = pushGlobalList(bStats.fluent); let hIdx = pushGlobalList(bStats.hesitant); let sIdx = pushGlobalList(bStats.stuck);
+                let tIdx = pushGlobalList(bStats.total); let fIdx = pushGlobalList(bStats.fluent);
+                let hIdx = pushGlobalList(bStats.hesitant); let sIdx = pushGlobalList(bStats.stuck);
+
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td class="col-ch">${chStr}</td><td class="${bStats.total.length>0?'clickable':''}" onclick="showList('basket', 'CH${chStr} 담은 문장 전체', ${tIdx})">${bStats.total.length || '-'}</td><td class="${bStats.fluent.length>0?'clickable num-fluent':''}" onclick="showList('basket', 'CH${chStr} 줍줍 - 술술', ${fIdx})">${bStats.fluent.length || '-'}</td><td class="${bStats.hesitant.length>0?'clickable num-hesitant':''}" onclick="showList('basket', 'CH${chStr} 줍줍 - 버벅', ${hIdx})">${bStats.hesitant.length || '-'}</td><td class="${bStats.stuck.length>0?'clickable num-stuck':''}" onclick="showList('basket', 'CH${chStr} 줍줍 - 막힘', ${sIdx})">${bStats.stuck.length || '-'}</td>`;
+                tr.innerHTML = `
+                    <td class="col-ch">${chStr}</td>
+                    <td class="${bStats.total.length>0?'clickable':''}" onclick="showList('basket', 'CH${chStr} 담은 문장 전체', ${tIdx})">${bStats.total.length || '-'}</td>
+                    <td class="${bStats.fluent.length>0?'clickable num-fluent':''}" onclick="showList('basket', 'CH${chStr} 줍줍 - 술술', ${fIdx})">${bStats.fluent.length || '-'}</td>
+                    <td class="${bStats.hesitant.length>0?'clickable num-hesitant':''}" onclick="showList('basket', 'CH${chStr} 줍줍 - 버벅', ${hIdx})">${bStats.hesitant.length || '-'}</td>
+                    <td class="${bStats.stuck.length>0?'clickable num-stuck':''}" onclick="showList('basket', 'CH${chStr} 줍줍 - 막힘', ${sIdx})">${bStats.stuck.length || '-'}</td>
+                `;
                 tbody.appendChild(tr);
             }
         }
+
+
 
         function showList(type, title, listIdx) {
             currentListType = type; currentListIdx = listIdx; currentListTitle = title; 
@@ -1331,10 +1523,15 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
         }
 
         function renderListItems() {
-            const list = globalTempLists[currentListIdx]; const wrapper = document.getElementById(currentListType + '-list-wrapper'); wrapper.innerHTML = '';
+            const list = globalTempLists[currentListIdx];
+            const wrapper = document.getElementById(currentListType + '-list-wrapper');
+            wrapper.innerHTML = '';
+
             list.forEach((card, index) => {
-                let item = document.createElement('div'); item.className = 'jub-item'; item.style.cursor = 'pointer';
+                let item = document.createElement('div'); item.className = 'jub-item';
+                item.style.cursor = 'pointer';
                 item.onclick = (e) => playSingleListCard(index, e);
+
                 let html = '<div class="jub-item-text" style="flex:1; padding-right:10px;">';
                 if(isListEngFirst) {
                     html += `<div class="eng text-green">${card.eng}</div>`;
@@ -1345,17 +1542,29 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                     html += `<div class="eng text-gray" style="margin-top:6px;">${card.eng}</div>`;
                     if(card.ipa) html += `<div style="font-size:13px; color:#868e96; margin-top:3px;">${card.ipa}</div>`;
                 }
-                const memoKey = card.ch + "_" + card.originalEng; const memoText = userDB.cardMemos && userDB.cardMemos[memoKey] ? userDB.cardMemos[memoKey] : "";
-                if (memoText) html += `<div style="font-size:12px; color:#1864ab; background:#e7f5ff; padding:6px 10px; border-radius:6px; margin-top:8px; display:inline-block;"><i class="fas fa-info-circle"></i> ${memoText}</div>`;
-                html += `<div style="font-size:11px; color:#adb5bd; margin-top:6px;"><b>${card.badge}</b></div></div><div class="item-actions">`;
-                html += `<button class="btn-icon-action ${memoText ? 'has-memo' : ''}" data-kor="${card.kor.replace(/"/g, '&quot;')}" onclick="openContextModal('${card.ch}', '${card.originalEng.replace(/'/g, "\\'")}', this.dataset.kor, event)"><i class="fas fa-info-circle"></i></button>`;
+                
+                const memoKey = card.ch + "_" + card.eng; // 💡 eng로 변경
+                const memoText = userDB.cardMemos && userDB.cardMemos[memoKey] ? userDB.cardMemos[memoKey] : "";
+                if (memoText) {
+                    html += `<div style="font-size:12px; color:#1864ab; background:#e7f5ff; padding:6px 10px; border-radius:6px; margin-top:8px; display:inline-block;"><i class="fas fa-info-circle"></i> ${memoText}</div>`;
+                }
+
+                html += `<div style="font-size:11px; color:#adb5bd; margin-top:6px;"><b>${card.badge}</b></div></div>`;
+                
+                html += `<div class="item-actions">`;
+                // 💡 eng로 변경하여 전달
+                html += `<button class="btn-icon-action ${memoText ? 'has-memo' : ''}" data-kor="${card.kor.replace(/"/g, '&quot;')}" onclick="openContextModal('${card.ch}', '${card.eng.replace(/'/g, "\\'")}', this.dataset.kor, event)"><i class="fas fa-info-circle"></i></button>`;
+                
                 if(currentListType === 'basket' && card.jubId) {
                     html += `<button class="btn-icon-action" onclick="openEditJubFromList('${card.jubId}', event)"><i class="fas fa-pencil-alt"></i></button>`;
                     html += `<button class="btn-remove-jub" onclick="removeJubById('${card.jubId}', event)"><i class="fas fa-trash-can"></i></button>`;
                 }
-                html += `</div>`; item.innerHTML = html; wrapper.appendChild(item);
+                html += `</div>`;
+
+                item.innerHTML = html; wrapper.appendChild(item);
             });
         }
+
 
         // =========================================================================
         // 7. 리스트 연속 재생 및 자동학습
@@ -1723,7 +1932,7 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
             if (currentCardIndex >= currentDeck.length) { finishTuktak(); return; }
 
             const card = currentDeck[currentCardIndex];
-            const cardKey = card.ch + "_" + card.originalEng;
+            const cardKey = card.ch + "_" + card.eng; // 💡 고유 키를 eng로 변경!
 
             document.getElementById('tuktak-badge').innerText = card.badge;
             document.getElementById('tuktak-counter').innerText = `${currentCardIndex + 1} / ${currentDeck.length}`;
@@ -1741,12 +1950,12 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
             if (card.chunks && card.chunks.length > 0 && card.eng === card.originalEng) {
                 card.chunks.forEach((c, idx) => {
                     let span = document.createElement('span'); span.className = 'chunk-span'; span.innerText = c.text + " ";
-                    span.onclick = (e) => playChunk(idx, e); engContainer.appendChild(span);
+                    span.onclick = (e) => playChunk(idx, e);
+                    engContainer.appendChild(span);
                 });
             } else { engContainer.innerText = card.eng; }
             
             const ipaEl = document.getElementById('tuktak-ipa');
-            // 💡 [개선] 헤드폰 아이콘 결합 노출
             if (card.ipa) { ipaEl.innerHTML = `🎧 ${card.ipa}`; } else { ipaEl.innerHTML = `🎧 음성 듣기`; }
             ipaEl.style.display = 'inline-block';
             
@@ -1760,25 +1969,37 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                 else { statusBadge.style.background = '#ffe3e3'; statusBadge.style.color = '#e03131'; }
             } else { statusBadge.style.display = 'none'; }
 
-            if (sessionAudioCache[cardKey]) { userAudioUrl = sessionAudioCache[cardKey]; const player = document.getElementById('user-audio-player'); if (player) player.src = userAudioUrl; } 
-            else { userAudioUrl = null; }
+            if (sessionAudioCache[cardKey]) {
+                userAudioUrl = sessionAudioCache[cardKey];
+                const player = document.getElementById('user-audio-player');
+                if (player) player.src = userAudioUrl;
+            } else {
+                userAudioUrl = null;
+            }
 
             let isPastCard = currentCardIndex < maxReachedIndex;
+
             if (isPastCard || (prevStatus && currentTaskId === null)) {
                 isAnswerRevealed = true;
-                document.getElementById('eng-half').classList.add('revealed'); document.getElementById('eng-half').onclick = null;
-                document.getElementById('action-speak').style.display = 'none'; document.getElementById('user-record-controls').style.display = 'flex'; document.getElementById('card-nav-buttons').style.display = 'flex';
+                document.getElementById('eng-half').classList.add('revealed');
+                document.getElementById('eng-half').onclick = null;
+                
+                document.getElementById('action-speak').style.display = 'none';
+                document.getElementById('user-record-controls').style.display = 'flex';
+                document.getElementById('card-nav-buttons').style.display = 'flex';
             } else {
                 isAnswerRevealed = false;
                 document.getElementById('eng-half').classList.remove('revealed');
-                // 언제든 화면 터치로 정답을 볼 수 있도록 허용
                 document.getElementById('eng-half').onclick = revealAnswerWithoutRecording;
                 
-                const btnSpeak = document.getElementById('btn-speak-record'); btnSpeak.innerHTML = '🎤 녹음 시작하기'; btnSpeak.style.background = '#5ba4ff'; btnSpeak.onclick = startRecording;
-                document.getElementById('action-speak').style.display = 'flex'; document.getElementById('user-record-controls').style.display = 'none'; document.getElementById('card-nav-buttons').style.display = 'none';
+                const btnSpeak = document.getElementById('btn-speak-record');
+                btnSpeak.innerHTML = '🎤 녹음 시작하기'; btnSpeak.style.background = '#5ba4ff'; btnSpeak.onclick = startRecording;
+
+                document.getElementById('action-speak').style.display = 'flex'; 
+                document.getElementById('user-record-controls').style.display = 'none';
+                document.getElementById('card-nav-buttons').style.display = 'none';
             }
 
-            // 💡 배속 컨트롤 가시성 조절 (하단)
             const speedControls = document.getElementById('card-speed-controls');
             if (speedControls) {
                 if (card.eng !== card.originalEng || !card.audio) speedControls.style.display = 'none';
@@ -1827,16 +2048,19 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
             try { startRecording(); } catch (e) { console.log("자동 녹음 시작 실패:", e); }
 
             const card = currentDeck[currentCardIndex];
-            // 💡 [수정] closure에서 정확한 카드를 캡처하기 위함
-            const cycleCardKey = card.ch + "_" + card.originalEng;
+            const cycleCardKey = card.ch + "_" + card.eng; // 💡 eng로 변경
             
-            let realAudioDurationSec = (card && card.audio && card.end > card.start) ? (card.end - card.start) : ((card && card.eng ? card.eng.length * 75 : 3000) / 1000);
-            let thinkSec = Math.max(4.0, realAudioDurationSec + 4.0); let thinkTimeMs = (thinkSec / currentAudioSpeed) * 1000;
+            let origDur = getOriginalAudioDuration(card.ch, card.originalEng);
+            let realAudioDurationSec = (card.audio && card.end > card.start) ? (card.end - card.start) : (origDur > 0 ? origDur : ((card.eng ? card.eng.length * 75 : 3000) / 1000));
+            
+            let thinkSec = Math.max(4.0, realAudioDurationSec + 4.0); 
+            let thinkTimeMs = (thinkSec / currentAudioSpeed) * 1000;
 
             autoPlayTimer = setTimeout(() => {
                 if (!isAutoPlayActive) return; revealAnswerWithoutRecording(); playNativeAudio(); 
-                let audioDurationSec = (card && card.audio && card.end > card.start) ? (card.end - card.start) : ((card && card.eng ? card.eng.length * 75 : 3000) / 1000);
-                let exactAudioMs = (audioDurationSec * 1000) / currentAudioSpeed; let postDelay = exactAudioMs + 3000; 
+                
+                let exactAudioMs = (realAudioDurationSec * 1000) / currentAudioSpeed; 
+                let postDelay = exactAudioMs + 3000; 
 
                 autoPlayTimer = setTimeout(() => {
                     if (!isAutoPlayActive) return;
@@ -1847,7 +2071,15 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
                             reader.onloadend = () => { 
                                 const base64String = reader.result; 
                                 sessionAudioCache[cycleCardKey] = base64String; 
-                                userDB.cardStats[cycleCardKey] = "술술"; // 💡 자동학습 통과 시 '술술' 성취도 자동 부여
+                                userDB.cardStats[cycleCardKey] = "술술"; 
+                                
+                                if (currentTaskId) {
+                                    let nextIdx = currentCardIndex + 1;
+                                    if (nextIdx > maxReachedIndex) {
+                                        maxReachedIndex = nextIdx;
+                                        userDB["progress_" + currentTaskId] = maxReachedIndex;
+                                    }
+                                }
                                 saveDB();
                             };
                         };
@@ -1861,27 +2093,72 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
         }
 
         async function startRecording() {
-            const btn = document.getElementById('btn-speak-record'); btn.innerHTML = '⏳ 준비 중...'; btn.style.background = '#adb5bd'; btn.disabled = true;
+            const btn = document.getElementById('btn-speak-record');
+            btn.innerHTML = '⏳ 준비 중...'; btn.style.background = '#adb5bd'; btn.disabled = true;
+
             try {
-                if (!globalAudioStream || !globalAudioStream.active) { globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-                const lockedCardIndex = currentCardIndex; const card = currentDeck[lockedCardIndex]; const cardKey = card.ch + "_" + card.originalEng;
-                mediaRecorder = new MediaRecorder(globalAudioStream); audioChunks = [];
-                mediaRecorder.ondataavailable = e => { if(e.data && e.data.size > 0) audioChunks.push(e.data); };
-                mediaRecorder.onstop = () => {
-                    const mimeType = mediaRecorder.mimeType || 'audio/mp4'; const audioBlob = new Blob(audioChunks, { type: mimeType }); 
-                    const reader = new FileReader(); reader.readAsDataURL(audioBlob);
-                    reader.onloadend = () => {
-                        const base64String = reader.result; sessionAudioCache[cardKey] = base64String;
-                        if (currentCardIndex === lockedCardIndex) {
-                            userAudioUrl = base64String; const player = document.getElementById('user-audio-player');
-                            if (player) { player.src = base64String; player.load(); }
-                            if (!isAutoPlayActive) { document.getElementById('eval-popup-eng').innerText = card.eng; document.getElementById('eval-popup-modal').classList.add('active'); }
-                        }
+                if (!globalAudioStream || !globalAudioStream.active) {
+                    globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                }
+                
+                const lockedCardIndex = currentCardIndex;
+                const card = currentDeck[lockedCardIndex];
+                const cardKey = card.ch + "_" + card.eng; // 💡 eng로 변경
+
+                const startRecordProcess = (stream) => {
+                    mediaRecorder = new MediaRecorder(stream); 
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => { 
+                        if(e.data && e.data.size > 0) audioChunks.push(e.data); 
                     };
+                    
+                    mediaRecorder.onstop = () => {
+                        const mimeType = mediaRecorder.mimeType || 'audio/mp4'; 
+                        const audioBlob = new Blob(audioChunks, { type: mimeType }); 
+                        
+                        const reader = new FileReader();
+                        reader.readAsDataURL(audioBlob);
+                        reader.onloadend = () => {
+                            const base64String = reader.result;
+                            sessionAudioCache[cardKey] = base64String;
+
+                            if (currentCardIndex === lockedCardIndex) {
+                                userAudioUrl = base64String;
+                                const player = document.getElementById('user-audio-player');
+                                if (player) {
+                                    player.src = base64String;
+                                    player.load(); 
+                                }
+
+                                if (!isAutoPlayActive) {
+                                    document.getElementById('eval-popup-eng').innerText = card.eng;
+                                    document.getElementById('eval-popup-modal').classList.add('active');
+                                }
+                            }
+                        };
+                    };
+
+                    mediaRecorder.start(); 
+                    btn.disabled = false;
+                    btn.innerHTML = '🛑 녹음 중지';
+                    btn.style.background = '#fa5252';
+                    btn.onclick = stopRecording;
                 };
-                mediaRecorder.start(); btn.disabled = false; btn.innerHTML = '🛑 녹음 중지'; btn.style.background = '#fa5252'; btn.onclick = stopRecording;
-            } catch (err) { btn.disabled = false; btn.innerHTML = '🎤 녹음 시작하기'; btn.style.background = '#5ba4ff'; alert("마이크 접근 권한이 필요합니다. 기기 설정에서 허용해 주세요!"); }
+
+                if (globalAudioStream && globalAudioStream.active) {
+                    startRecordProcess(globalAudioStream);
+                } else {
+                    globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    startRecordProcess(globalAudioStream);
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = '🎤 녹음 시작하기';
+                btn.style.background = '#5ba4ff';
+                alert("마이크 권한이 필요합니다. 기기 설정에서 마이크를 허용해 주세요!");
+            }
         }
+
 
         function stopRecording() {
             if(mediaRecorder && mediaRecorder.state !== 'inactive') {
@@ -1898,22 +2175,30 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
             } else { alert("현재 녹음된 파일이 없습니다. [재녹음하기]를 눌러 먼저 녹음해 주세요."); }
         }
 
+
         function reRecord() {
             stopNativeAudio(); isAnswerRevealed = false;
+            
             const card = currentDeck[currentCardIndex];
-            if (card) { const cardKey = card.ch + "_" + card.originalEng; delete sessionAudioCache[cardKey]; }
+            if (card) {
+                const cardKey = card.ch + "_" + card.eng; // 💡 eng로 변경
+                delete sessionAudioCache[cardKey];
+            }
             userAudioUrl = null;
-            document.getElementById('eng-half').classList.remove('revealed'); document.getElementById('user-record-controls').style.display = 'none'; document.getElementById('card-nav-buttons').style.display = 'none'; document.getElementById('action-speak').style.display = 'flex';
+
+            document.getElementById('eng-half').classList.remove('revealed');
+            document.getElementById('user-record-controls').style.display = 'none';
+            document.getElementById('card-nav-buttons').style.display = 'none';
+            document.getElementById('action-speak').style.display = 'flex';
             startRecording(); 
         }
 
         function evalFromPopup(status) {
             document.getElementById('eval-popup-modal').classList.remove('active');
             const card = currentDeck[currentCardIndex];
-            const key = card.ch + "_" + card.originalEng;
+            const key = card.ch + "_" + card.eng; // 💡 eng로 변경
             userDB.cardStats[key] = status;
             
-            // 💡 [핵심 추가] 평가 완료 시에도 진도 갱신
             if (currentTaskId) {
                 let nextIdx = currentCardIndex + 1;
                 if (nextIdx > maxReachedIndex) {
@@ -1991,13 +2276,18 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
         }
 
         function updateJubButtonState() {
-            const card = currentDeck[currentCardIndex]; if(!card) return;
+            const card = currentDeck[currentCardIndex];
+            if(!card) return;
+            // 💡 줍줍 변형 파생 개수 추적은 원본(originalEng) 사용 유지
             const count = userDB.jubs.filter(j => j.originalEng === card.originalEng).length;
-            const badge = document.getElementById('jub-count-badge'); if(badge) { badge.innerText = count; badge.style.background = count > 0 ? '#ff6b6b' : '#adb5bd'; }
-            const memoKey = card.ch + "_" + card.originalEng; const hasMemo = userDB.cardMemos && userDB.cardMemos[memoKey];
-            const memoBtn = document.getElementById('btn-card-memo'); if (memoBtn) { memoBtn.style.color = hasMemo ? '#339af0' : '#495057'; memoBtn.style.opacity = hasMemo ? '1' : '0.5'; }
+            const badge = document.getElementById('jub-count-badge'); 
+            if(badge) { badge.innerText = count; badge.style.background = count > 0 ? '#ff6b6b' : '#adb5bd'; }
+            
+            const memoKey = card.ch + "_" + card.eng; // 💡 eng로 변경
+            const hasMemo = userDB.cardMemos && userDB.cardMemos[memoKey];
+            const memoBtn = document.getElementById('btn-card-memo');
+            if (memoBtn) { memoBtn.style.color = hasMemo ? '#339af0' : '#495057'; memoBtn.style.opacity = hasMemo ? '1' : '0.5'; }
         }
-
 
 
 
@@ -2164,13 +2454,30 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
             }
         }
 
-        function openContextModalFromCard(e) { if(e) e.stopPropagation(); const card = currentDeck[currentCardIndex]; if(!card) return; openContextModal(card.ch, card.originalEng, card.kor, e); }
-        function openContextModal(ch, originalEng, korText, e) {
-            if (korText && korText.stopPropagation) { e = korText; korText = originalEng; }
-            if(e) e.stopPropagation(); currentMemoKey = ch + "_" + originalEng; if(!userDB.cardMemos) userDB.cardMemos = {};
-            const scriptBox = document.getElementById('context-modal-script'); if (scriptBox) scriptBox.innerText = korText || originalEng;
-            document.getElementById('context-memo-input').value = userDB.cardMemos[currentMemoKey] || ""; document.getElementById('context-modal').classList.add('active');
+        function openContextModalFromCard(e) {
+            if(e) e.stopPropagation();
+            const card = currentDeck[currentCardIndex];
+            if(!card) return;
+            // 💡 eng로 변경 전달
+            openContextModal(card.ch, card.eng, card.kor, e);
         }
+
+        function openContextModal(ch, engText, korText, e) {
+            if (korText && korText.stopPropagation) {
+                e = korText;
+                korText = engText; 
+            }
+            if(e) e.stopPropagation();
+            currentMemoKey = ch + "_" + engText; // 💡 engText 사용
+            if(!userDB.cardMemos) userDB.cardMemos = {};
+            
+            const scriptBox = document.getElementById('context-modal-script');
+            if (scriptBox) scriptBox.innerText = korText || engText;
+
+            document.getElementById('context-memo-input').value = userDB.cardMemos[currentMemoKey] || "";
+            document.getElementById('context-modal').classList.add('active');
+        }
+
         function closeContextModal() { document.getElementById('context-modal').classList.remove('active'); }
         function saveContextMemo() {
             if(!userDB.cardMemos) userDB.cardMemos = {}; const val = document.getElementById('context-memo-input').value.trim();
@@ -2189,16 +2496,103 @@ body.tuktak-mode .main-container { padding-top: 36px !important; padding-bottom:
         }
         function uePromptModify() { document.getElementById('ue-prompt-modal').classList.remove('active'); openEditModal(); }
 
+        // 📄 [최종 해결] 다운로드 권한 팝업 없이 새 창으로 A4 2열 문서를 열어 즉시 PDF 저장/인쇄하는 함수 (메모 추가)
         function downloadJubsAsA4PDF() {
-            if (!userDB.jubs || userDB.jubs.length === 0) { alert("다운로드할 줍줍 문장이 없습니다!"); return; }
+            if (!userDB.jubs || userDB.jubs.length === 0) {
+                alert("다운로드할 줍줍 문장이 없습니다!");
+                return;
+            }
+
             const titleText = document.getElementById('basket-list-title').innerText || "나만의 줍줍 문장";
+            
+            // 줍줍 데이터 기반 2열 테이블 행 생성
             let tableRowsHtml = "";
-            userDB.jubs.forEach((item, idx) => { tableRowsHtml += `<tr><td class="num-col">${idx + 1}</td><td class="eng-col"><div class="eng-text">${item.eng || ""}</div>${item.ipa ? `<div class="ipa-text">${item.ipa}</div>` : ""}<div class="source-text">[출처: ${item.section || 'MS'}]</div></td><td class="kor-text">${item.kor || ""}</td></tr>`; });
-            const htmlContent = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>Stack Up - ${titleText}</title><style>body { font-family: 'Pretendard', -apple-system, sans-serif; padding: 30px; color: #212529; max-width: 900px; margin: 0 auto; background: #fff; } h1 { font-size: 22px; border-bottom: 2px solid #339af0; padding-bottom: 10px; margin-bottom: 20px; color: #1e293b; } table { width: 100%; border-collapse: collapse; margin-top: 10px; } th, td { border: 1px solid #cbd5e1; padding: 12px 14px; vertical-align: middle; } th { background: #f8f9fa; font-size: 13px; color: #495057; text-align: center; } .num-col { width: 40px; text-align: center; font-weight: bold; color: #64748b; font-size: 13px; background: #f8f9fa; } .eng-col { width: 50%; } .kor-text { width: 45%; font-weight: 700; color: #2b8a3e; font-size: 15px; } .eng-text { font-weight: 700; color: #1e293b; font-size: 15px; margin-bottom: 4px; } .ipa-text { color: #64748b; font-size: 13px; margin-bottom: 4px; font-style: italic; } .source-text { color: #adb5bd; font-size: 11px; } tr { page-break-inside: avoid; }</style></head><body><h1>📄 Stack Up - ${titleText}</h1><table><thead><tr><th>No</th><th>🇺🇸 영어 / 발음기호</th><th>🇰🇷 한글 뜻</th></tr></thead><tbody>${tableRowsHtml}</tbody></table><script>window.onload = function() { setTimeout(() => { window.print(); }, 300); }<\/script></body></html>`;
+            userDB.jubs.forEach((item, idx) => {
+                // 💡 [핵심] 해당 문장의 상황 메모 찾기
+                const memoKey = item.ch + "_" + item.eng;
+                const memoText = userDB.cardMemos && userDB.cardMemos[memoKey] ? userDB.cardMemos[memoKey] : "";
+                
+                let memoHtml = "";
+                if (memoText) {
+                    // 발음기호와 동일한 느낌을 주기 위한 HTML 요소
+                    memoHtml = `<div class="memo-text">ℹ️ ${memoText}</div>`;
+                }
+
+                tableRowsHtml += `
+                    <tr>
+                        <td class="num-col">${idx + 1}</td>
+                        <td class="eng-col">
+                            <div class="eng-text">${item.eng || ""}</div>
+                            ${item.ipa ? `<div class="ipa-text">${item.ipa}</div>` : ""}
+                            <div class="source-text">[출처: ${item.section || 'MS'}]</div>
+                        </td>
+                        <td class="kor-col">
+                            <div class="kor-text">${item.kor || ""}</div>
+                            ${memoHtml}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // A4 규격 2열 문서 HTML 생성 (CSS에 .memo-text 추가)
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html lang="ko">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Stack Up - ${titleText}</title>
+                    <style>
+                        body { font-family: 'Pretendard', -apple-system, sans-serif; padding: 30px; color: #212529; max-width: 900px; margin: 0 auto; background: #fff; }
+                        h1 { font-size: 22px; border-bottom: 2px solid #339af0; padding-bottom: 10px; margin-bottom: 20px; color: #1e293b; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 12px 14px; vertical-align: middle; }
+                        th { background: #f8f9fa; font-size: 13px; color: #495057; text-align: center; }
+                        .num-col { width: 40px; text-align: center; font-weight: bold; color: #64748b; font-size: 13px; background: #f8f9fa; }
+                        .eng-col { width: 50%; }
+                        .kor-col { width: 45%; }
+                        .kor-text { font-weight: 700; color: #2b8a3e; font-size: 15px; }
+                        .eng-text { font-weight: 700; color: #1e293b; font-size: 15px; margin-bottom: 4px; }
+                        .ipa-text { color: #64748b; font-size: 13px; margin-bottom: 4px; font-style: italic; }
+                        /* 💡 메모용 스타일 (발음기호 폰트 스타일 적용) */
+                        .memo-text { color: #64748b; font-size: 13px; margin-top: 6px; font-style: italic; font-weight: 400; line-height: 1.4; }
+                        .source-text { color: #adb5bd; font-size: 11px; }
+                        tr { page-break-inside: avoid; }
+                    </style>
+                </head>
+                <body>
+                    <h1>📄 Stack Up - ${titleText}</h1>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>🇺🇸 영어 / 발음기호</th>
+                                <th>🇰🇷 한글 뜻 / 📝 메모</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRowsHtml}
+                        </tbody>
+                    </table>
+                    <script>
+                        window.onload = function() {
+                            setTimeout(() => { window.print(); }, 300);
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `;
+
+            // 새 창(또는 새 탭)을 열어서 문서를 렌더링하고 곧바로 인쇄 창 호출
             const printWindow = window.open('', '_blank');
-            if (printWindow) { printWindow.document.write(htmlContent); printWindow.document.close(); } 
-            else { alert("팝업 차단이 설정되어 있어 창을 열 수 없습니다. 팝업 차단을 해제해 주세요."); }
+            if (printWindow) {
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+            } else {
+                alert("팝업 차단이 설정되어 있어 창을 열 수 없습니다. 브라우저의 팝업 차단을 해제해 주세요.");
+            }
         }
+
+
     </script>
 </body>
 </html>
