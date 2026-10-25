@@ -12,7 +12,11 @@
     <!-- 📱 아이폰 / 아이패드 홈 화면 추가 시 표시되는 앱 아이콘 -->
     <link rel="apple-touch-icon" sizes="180x180" href="stackup.png">
     <link rel="manifest" href="manifest.json">
-
+    
+<!-- 🌐 브라우저 테마 및 상태바 색상을 #99c0ff로 고정 -->
+    <meta name="theme-color" content="#99c0ff">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="msapplication-TileColor" content="#99c0ff">
 
     <style>
 /* =========================================================
@@ -26,19 +30,19 @@
 
 /* 01. 색상 및 공통 설정 ------------------------------------ */
 :root {
-  --bg-color: #f4f6f9;
-  --primary-color: #4dabf7;
-  --primary-strong: #339af0;
-  --text-main: #212529;
-  --text-sub: #495057;
-  --text-muted: #868e96;
-  --heading-color: #1e293b;
-  --border-color: #e9ecef;
-  --story-color: #ffffff;
-  --pattern-color: #e8f4ec;
-  --success-color: #2b8a3e;
-  --danger-color: #e03131;
-  --surface: #ffffff;
+    --bg-color: #f4f6f9;
+    --primary-color: #99c0ff;     /* 💡 코치님이 찍어주신 파스텔 파란색 (#99c0ff) */
+    --primary-strong: #6da2ff;    /* 강조용 (조금 더 진한 파스텔 블루) */
+    --text-main: #212529;
+    --text-sub: #495057;
+    --text-muted: #868e96;
+    --heading-color: #1e293b;
+    --border-color: #e9ecef;
+    --story-color: #ffffff;
+    --pattern-color: #e8f4ec;
+    --success-color: #2b8a3e;
+    --danger-color: #e03131;
+    --surface: #ffffff;
 }
 
 * {
@@ -49,7 +53,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 html { -webkit-text-size-adjust: 100%; }
-body { background: var(--bg-color); color: var(--text-main); }
+body { 
+    background: var(--bg-color); 
+    color: var(--text-main); 
+    /* 만약 상단 여백까지 하늘색으로 채우고 싶다면 아래처럼 배경색 지정 가능 */
+}
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 
@@ -89,18 +97,28 @@ button { cursor: pointer; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+
 /* 03. 공통 페이지 레이아웃 / 상단 탭 ------------------------ */
+
 .nav-tabs {
-  position: fixed; top: 0; left: 0; z-index: 100;
-  display: flex; width: 100%; background: #fff;
-  box-shadow: 0 2px 10px rgba(0,0,0,.04); transition: top .2s;
+    position: fixed; top: 0; left: 0; z-index: 100;
+    display: flex; width: 100%; background: #99c0ff; /* 탭 전체 배경을 파스텔 파란색으로 통일 */
+    box-shadow: 0 2px 10px rgba(0,0,0,.04); transition: top .2s;
 }
 .nav-tab {
-  flex: 1; padding: 16px 0; border-bottom: 3px solid transparent;
-  color: #adb5bd; font-size: 15px; font-weight: 700;
-  text-align: center; cursor: pointer; transition: color .2s, border-color .2s;
+    flex: 1; padding: 16px 0; border-bottom: 3px solid transparent;
+    color: #1e3a8a; /* 💡 선택 안 되었을 때 진한 남색 */
+    font-size: 15px; font-weight: 700;
+    text-align: center; cursor: pointer; transition: all .2s;
+    background: transparent;
 }
-.nav-tab.active { color: var(--success-color); border-bottom-color: var(--success-color); }
+.nav-tab.active { 
+    color: #ffffff;                  /* 💡 선택되었을 때 선명한 흰색 */
+    background: #6da2ff;             /* 선택된 탭은 조금 더 진한 파스텔 블루로 음영 강조 */
+    border-bottom-color: #1e3a8a;    /* 남색 계열로 깔끔한 밑줄 포인트 */
+    font-weight: 800;
+}
+
 .date-simulator {
   position: fixed; top: 53px; left: 0; z-index: 99;
   display: flex; justify-content: center; align-items: center; gap: 8px;
@@ -469,11 +487,11 @@ body.tuktak-mode .date-simulator {
 </button>
             </div>
             <div class="schedule-info-box">
-                <div class="schedule-info-line">💡 1일차는 MS/RC 문장을 학습합니다.</div>
-                <div class="schedule-info-line">💡 2일차는 UE을 변형 및 줍줍하여 학습합니다.</div>
-                <div class="schedule-info-line">💡 3일차는 MS/RC 문장을 보지않고도 달달 나오는지 확인합니다.</div>
-                <div class="schedule-info-line">💡 4일차는 UE의 변형/줍줍 문장이 달달 나오는지 확인합니다.</div>
-                <div class="schedule-info-line">💡 5일차는 MS/RC본문과 줍줍문장 모두 달달 나오는지 확인합니다.</div>
+                <div class="schedule-info-line">💡 1일차-MS/RC 본문 학습</div>
+                <div class="schedule-info-line">💡 2일차-UE을 줍줍/변형 학습</div>
+                <div class="schedule-info-line">💡 3일차-MS/RC 본문이 달달달 나오는지 확인</div>
+                <div class="schedule-info-line">💡 4일차-UE의 줍줍/변형 문장이 달달달 나오는지 확인</div>
+                <div class="schedule-info-line">💡 5일차-MS/RC/UE줍줍 모두 달달달 나오는지 확인</div>
             </div>
             <div id="tracker-grid"></div>
         </div>
@@ -1344,11 +1362,11 @@ body.tuktak-mode .date-simulator {
         // =========================================================================
         const taskOffsets = { "1일차": 0, "2일차": 1, "3일차": 2, "4일차": 3, "5일차": 5 };
         const taskLabels = {
-            "1일차": { icon: "📖", name: "진도", desc: "본문(MS/RC) 흐름 파악", type: "story" },
-            "2일차": { icon: "✍️", name: "확장", desc: "UE 표현 줍줍&변형", type: "pattern" },
-            "3일차": { icon: "🎭", name: "스토리", desc: "본문 달달 복습(MS/RC)", type: "story" },
-            "4일차": { icon: "🔄", name: "반복", desc: "줍줍&변형 달달 복습", type: "pattern" },
-            "5일차": { icon: "✨", name: "새김", desc: "본문+줍줍 최종 복습", type: "pattern" }
+            "1일차": { icon: "📖", name: "진도", sub: "본문 학습", desc: "본문(MS/RC) 흐름 파악", type: "story" },
+            "2일차": { icon: "✍️", name: "확장", sub: "UE 학습", desc: "UE 표현 줍줍&변형", type: "pattern" },
+            "3일차": { icon: "🗣️", name: "술술", sub: "본문 인출", desc: "본문 달달 복습(MS/RC)", type: "story" },
+            "4일차": { icon: "🔄", name: "각인", sub: "UE 인출", desc: "줍줍&변형 달달 복습", type: "pattern" },
+            "5일차": { icon: "🏁", name: "완성", sub: "전체 점검", desc: "본문+줍줍 최종 복습", type: "pattern" }
         };
 
         function renderTracker() {
@@ -1393,11 +1411,15 @@ body.tuktak-mode .date-simulator {
                     let isCompleted = completedVal !== undefined && completedVal !== false;
                     let isToday = (!isWeekend && reqDays === currentStudyDays);
                     let isMissed = (reqDays < currentStudyDays) && !isCompleted;
-                    
-                    // 💡 [신규] 미래 과제인지 판별
                     let isFuture = reqDays > currentStudyDays;
 
-                    cell.innerHTML = `<span class="task-icon">${uiInfo.icon}</span><span>${uiInfo.name}</span>`;
+                    // 💡 [수정] 아이콘, 메인 이름(진도, 확장, 술술...), 그리고 아래 회색 작은 텍스트(sub) 구조 적용
+                    cell.innerHTML = `
+                        <span class="task-icon" style="font-size:16px; margin-bottom:2px;">${uiInfo.icon}</span>
+                        <span style="font-weight:800; font-size:13px; color:inherit;">${uiInfo.name}</span>
+                        <span style="font-size:9.5px; color:#868e96; font-weight:600; margin-top:1px;">${uiInfo.sub}</span>
+                    `;
+
                     if (isToday) todayTasks.push({ chStr, dayLabel, uiInfo, isCompleted, completedVal });
 
                     if (isCompleted) cell.classList.add('completed');
@@ -1405,7 +1427,6 @@ body.tuktak-mode .date-simulator {
                     else if (isMissed) cell.classList.add('missed');
                     else cell.style.opacity = '0.45';
 
-                    // 💡 [신규] 미래 과제 클릭 시 차단 알림
                     cell.onclick = () => {
                         if (isFuture) {
                             alert("⏳ 아직 오픈되지 않은 미션입니다.\n지정된 날짜 이후에 학습할 수 있습니다!");
