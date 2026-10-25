@@ -302,15 +302,19 @@ body.tuktak-mode .date-simulator {
 .tuktak-card { position: relative; display: flex; flex-direction: column; height: 500px; }
 .card-half { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; text-align: center; }
 .kor-half { flex: .9; min-height: 180px; padding: 10px; border-bottom: 2px dashed var(--border-color); background: #fff; }
-.eng-half { flex: 2.3; min-height: 320px; padding: 10px; background: #f8f9fa; cursor: pointer; }
+.eng-half { 
+    flex: 2.3; min-height: 320px; padding: 30px 15px 15px 10px; background: #f8f9fa; cursor: pointer; 
+    justify-content: flex-start !important; /* 💡 영어가 위로 올라가도록 수정 */
+}
 .eng-half.revealed { background: #fff; cursor: default; }
 .kor-half-header { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; margin-bottom: 0; }
 .btn-kor-memo { padding: 0 4px; border: 0; background: transparent; color: #868e96; font-size: 16px; transition: color .2s; }
 .btn-kor-memo:hover, .btn-kor-memo.has-memo { color: var(--primary-strong); }
 .text-content { font-weight: 700; line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere; }
 .kor-text { color: #1864ab; font-size: 25px; }
-.eng-box { display: none; flex-direction: column; justify-content: center; align-items: center; gap: 12px; width: 100%; height: 100%; }
+.eng-box { display: none; flex-direction: column; justify-content: flex-start; align-items: center; gap: 8px; width: 100%; height: 100%; }
 .eng-half.revealed .eng-box { display: flex; }
+
 .eng-text { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 10px; color: var(--success-color); font-size: 28px; font-weight: 800; }
 .chunk-span { padding: 2px 4px; border-radius: 6px; cursor: pointer; transition: background .15s; }
 .chunk-span:active { background: #e7f5ff; }
@@ -346,10 +350,20 @@ body.tuktak-mode .date-simulator {
 .icon-btn.jub-btn { display: flex; align-items: center; flex-shrink: 0; gap: 4px; padding: 4px 8px; border: 0; background: transparent; color: var(--text-sub); font-size: 14px; font-weight: 800; opacity: .6; }
 .icon-btn.jub-btn.active { color: #e67700; opacity: 1; }
 .jub-badge { display: inline-block; margin-left: 4px; padding: 2px 6px; border-radius: 10px; background: #adb5bd; color: #fff; font-size: 11px; font-weight: 800; transition: background .2s; }
-#card-nav-buttons { position: absolute; right: 16px; bottom: 16px; z-index: 20; display: none; gap: 10px; }
-.nav-arrow-btn { display: flex; justify-content: center; align-items: center; width: 42px; height: 42px; border: 2px solid var(--border-color); border-radius: 50%; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,.05); color: var(--text-sub); font-size: 16px; transition: background .2s, border-color .2s, transform .2s; }
-.nav-arrow-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
-.nav-arrow-btn:active { transform: scale(.95); background: #f1f3f5; }
+/* 2. 카드 이전/다음 버튼 컴팩트 스타일 (동그라미 제거, 삼각형 화살표) */
+#card-nav-buttons { 
+    position: absolute; right: 20px; bottom: 15px; z-index: 20; 
+    display: none; gap: 16px; align-items: center; 
+}
+.nav-arrow-btn { 
+    display: flex; justify-content: center; align-items: center; 
+    width: 28px; height: 28px; border: none; background: transparent; 
+    color: #9aa0a6; font-size: 20px; cursor: pointer; transition: transform .15s, color .15s; 
+    padding: 0; box-shadow: none;
+}
+.nav-arrow-btn:hover { color: var(--primary-strong); transform: scale(1.15); }
+.nav-arrow-btn:active { transform: scale(0.95); }
+
 .card-actions-wrapper { flex-shrink: 0; width: 100%; height: 60px; border-top: 1px solid var(--border-color); background: #fff; }
 .card-actions-wrapper .next-btn { display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; height: 100%; border: 0; background: var(--primary-strong); color: #fff; font-size: 18px; font-weight: 800; transition: background .1s; }
 .card-actions-wrapper .next-btn:active { background: #228be6; }
@@ -397,8 +411,11 @@ body.tuktak-mode .date-simulator {
 .btn-random { display: flex; justify-content: center; align-items: center; width: 32px; height: 30px; border: 0; border-radius: 16px; background: #e9ecef; color: #868e96; font-size: 14px; transition: background .2s, color .2s; }
 .btn-random.active { background: #845ef7; color: #fff; box-shadow: 0 2px 6px rgba(132,94,247,.3); }
 
-#card-speed-controls { display: none; justify-content: center; align-items: center; margin: 12px 0 4px 0; }
-
+/* 3. 배속 설정을 카드 밖으로 빼서 왼쪽 정렬 */
+#card-speed-controls { 
+    display: none; justify-content: flex-start; align-items: center; 
+    margin: 10px 0 0 4px; /* 💡 카드 외부 하단, 좌측 정렬 */
+}
 
 /* 12. 모바일 전용 (767px 이하) ----------------------------- */
 @media (max-width: 767px) {
@@ -408,8 +425,11 @@ body.tuktak-mode .date-simulator {
   .date-simulator { gap: 5px; padding: 8px 6px; font-size: 12px; }
   .date-simulator button { padding: 5px 7px; font-size: 11px; white-space: nowrap; }
   #currentDateDisplay { margin: 0 3px !important; font-size: 12px !important; white-space: nowrap; }
-  body.tuktak-mode .main-container { padding-top: 24px !important; }
-
+  /* 💡 툭탁 모드 진입 시 상단 여백(빨간 화살표 영역)을 12px로 바짝 줄여줍니다 */
+body.tuktak-mode .main-container {
+    padding-top: 12px !important; 
+    padding-bottom: 24px !important;
+}
   /* 진도 / 미션 */
   .mission-card { padding: 16px; }
   .mission-main-title { font-size: 17px; }
@@ -648,7 +668,7 @@ body.tuktak-mode .date-simulator {
                     <div class="card-half eng-half" id="eng-half">
                         <div class="eng-card-top-buttons">
                             <div style="flex:1;"></div>
-                            <div style="display:flex; align-items:center; gap:6px;">                               
+                            <div style="display:flex; align-items:center; gap:6px;">    
                                 <button class="icon-btn jub-btn" id="btn-jub" onclick="openEditModal(event)">
                                     🧺 <span id="jub-count-badge" class="jub-badge">0</span>
                                 </button>
@@ -656,12 +676,12 @@ body.tuktak-mode .date-simulator {
                         </div>
                         <div class="eng-box">
                             <div class="text-content eng-text" id="tuktak-eng"></div>
-                            <!-- 💡 발음기호 앞에 헤드폰 아이콘 노출 -->
                             <div class="ipa-text" id="tuktak-ipa" onclick="playNativeAudio(event)" title="클릭하여 음성 듣기" style="box-shadow: 0 2px 8px rgba(0,0,0,0.06);"></div>
                         </div>
+                        <!-- 💡 컴팩트한 화살표 버튼 (꼬부기 스타일) -->
                         <div id="card-nav-buttons">
-                            <button class="nav-arrow-btn" onclick="prevCard(event)"><i class="fas fa-chevron-left"></i></button>
-                            <button class="nav-arrow-btn" onclick="nextCard(event)"><i class="fas fa-chevron-right"></i></button>
+                            <button class="nav-arrow-btn" onclick="prevCard(event)"><i class="fas fa-caret-left" style="font-size:24px;"></i></button>
+                            <button class="nav-arrow-btn" onclick="nextCard(event)"><i class="fas fa-caret-right" style="font-size:24px;"></i></button>
                         </div>
                     </div>
                 </div>
@@ -680,17 +700,18 @@ body.tuktak-mode .date-simulator {
                         🔄 재녹음하기
                     </button>
                 </div>
-                
-                <!-- 💡 카드 외부 하단으로 배속 컨트롤 이동 -->
-                <div id="card-speed-controls">
-                    <span style="font-size: 13px; font-weight: 800; color: #adb5bd; margin-right: 8px;">배속설정</span>
-                    <div class="speed-options" onclick="event.stopPropagation()">
-                        <span class="speed-btn" onclick="setSpeed(0.2, event)">x0.2</span>
-                        <span class="speed-btn" onclick="setSpeed(0.5, event)">x0.5</span>
-                        <span class="speed-btn" onclick="setSpeed(0.7, event)">x0.7</span>
-                        <span class="speed-btn active" onclick="setSpeed(1.0, event)">x1.0</span>
-                    </div>
+            </div>
+
+            <!-- 💡 배속 설정을 툭탁 카드 바깥쪽, 왼쪽으로 이동 -->
+            <div id="card-speed-controls">
+                <span style="font-size: 13px; font-weight: 800; color: #adb5bd; margin-right: 8px;">오디오 배속</span>
+                <div class="speed-options" onclick="event.stopPropagation()">
+                    <span class="speed-btn" onclick="setSpeed(0.2, event)">x0.2</span>
+                    <span class="speed-btn" onclick="setSpeed(0.5, event)">x0.5</span>
+                    <span class="speed-btn" onclick="setSpeed(0.7, event)">x0.7</span>
+                    <span class="speed-btn active" onclick="setSpeed(1.0, event)">x1.0</span>
                 </div>
+            </div>
             </div>
         </div>
 
@@ -1119,6 +1140,26 @@ body.tuktak-mode .date-simulator {
                 if (snapshot.empty) return listContainer.innerHTML = '<div style="text-align:center; color:#868e96; padding:20px;">등록된 회원이 없습니다.</div>';
                 let simDateObj = new Date(simulatedDate); simDateObj.setHours(12, 0, 0, 0);
                 
+                // 전체 문장 개수 사전 계산 (1~12챕터 총 문장 수)
+                let totalSentencesCount = 0;
+                if (typeof studyData !== 'undefined') {
+                    for (let ch = 1; ch <= 12; ch++) {
+                        let chStr = ch < 10 ? '0'+ch : ''+ch;
+                        const d = studyData[chStr];
+                        if (d) {
+                            let ms = extractCards(d.mystory ? d.mystory.sentences : [], `MS ${chStr}`, "", chStr);
+                            let msue = extractCards(d.useful_mystory ? d.useful_mystory.sentences : [], `MS UE ${chStr}`, "", chStr);
+                            let rc = extractCards(d.realconvo ? d.realconvo.chat : [], `RC ${chStr}`, "", chStr);
+                            let rcue = extractCards(d.useful_realconvo ? d.useful_realconvo.sentences : [], `RC UE ${chStr}`, "", chStr);
+                            totalSentencesCount += (ms.length + msue.length + rc.length + rcue.length);
+                        }
+                    }
+                }
+                if (totalSentencesCount === 0) totalSentencesCount = 240;
+
+                // 총 미션 개수 (12챕터 * 5일차 = 60개)
+                const totalMissionsCount = 12 * 5;
+                
                 snapshot.forEach(doc => {
                     const uid = doc.id; const data = doc.data();
                     let displayName = data.userId || (data.email ? data.email.split('@')[0] : (uid === currentUserUid ? "Raina (관리자)" : `사용자 (${uid.substring(0, 6)})`));
@@ -1127,10 +1168,21 @@ body.tuktak-mode .date-simulator {
                         let d = new Date(data.lastLoginAt);
                         lastLoginStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes()}`;
                     }
-                    const completedMap = data.completedTasks || {};
-                    const completedCount = Object.keys(completedMap).filter(k => completedMap[k] !== false).length;
-                    let totalPenalties = 0;
                     
+                    const completedMap = data.completedTasks || {};
+                    const clearedMissionsCount = Object.keys(completedMap).filter(k => completedMap[k] !== false).length;
+                    
+                    const cardStatsMap = data.cardStats || {};
+                    const learnedSentencesCount = Object.keys(cardStatsMap).length;
+
+                    const learnRate = Math.min(100, Math.round((learnedSentencesCount / totalSentencesCount) * 100));
+                    const missionRate = Math.min(100, Math.round((clearedMissionsCount / totalMissionsCount) * 100));
+
+                    // 추가 통계: 줍줍 개수 및 상황 메모 작성 개수
+                    const jubsCount = data.jubs ? data.jubs.length : 0;
+                    const memosCount = data.cardMemos ? Object.keys(data.cardMemos).length : 0;
+
+                    let totalPenalties = 0;
                     for (let ch = 1; ch <= 12; ch++) {
                         let chStr = ch < 10 ? '0'+ch : ''+ch; let chStartOffset = (ch - 1) * 2;
                         Object.keys(taskOffsets).forEach(dayLabel => {
@@ -1159,22 +1211,26 @@ body.tuktak-mode .date-simulator {
                                 <i class="fas fa-user-circle" style="color:#339af0; font-size:18px;"></i> ${displayName}
                                 <span style="font-size:11px; background:#e2e8f0; color:#475569; padding:2px 6px; border-radius:6px; font-weight:600;">최근 로그인: ${lastLoginStr}</span>
                             </div>
-                            <div style="font-size:12px; color:#495057; margin-top:6px; display:flex; gap:10px; flex-wrap:wrap;">
-                                <span>🧺 줍줍: <b>${data.jubs ? data.jubs.length : 0}개</b></span>
-                                <span>🎯 완료: <b style="color:#2b8a3e;">${completedCount}개</b></span>
+                            <div style="font-size:12px; color:#495057; margin-top:8px; display:flex; gap:12px; flex-wrap:wrap; line-height: 1.5;">
                                 <span style="color:${totalPenalties > 0 ? '#e03131' : '#2b8a3e'};">⚠️ 패널티: <b>${totalPenalties}회</b></span>
+                                <span>📚 학습률: <b style="color:#1d4ed8;">${learnedSentencesCount}/${totalSentencesCount}개 (${learnRate}%)</b></span>
+                                <span>🎯 미션 완료율: <b style="color:#2b8a3e;">${clearedMissionsCount}/${totalMissionsCount}개 (${missionRate}%)</b></span>
+                                <span>🧺 줍줍: <b style="color:#7950f2;">${jubsCount}개</b></span>
+                                <span>📝 메모: <b style="color:#e67700;">${memosCount}개</b></span>
                             </div>
                         </div>
-                        <div style="display:flex; gap:6px; flex-shrink:0;">
-                            <!-- 💡 [수정] 개별 회원 선택 시에도 통합된 선택 초기화 모달 띄우기 -->
-                            <button style="padding:8px 12px; background:#f59f00; color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;" onclick="openAdminResetModal('${uid}')">선택초기화</button>
-                            <button style="padding:8px 12px; background:#fa5252; color:white; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer;" onclick="adminDeleteUser('${uid}')">삭제</button>
+                        <!-- 💡 [요청 반영] 선택초기화 / 삭제 버튼을 2열이 아닌 세로 2행 배치로 정렬 -->
+                        <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0; width:90px;">
+                            <button style="width:100%; padding:7px 0; background:#f59f00; color:white; border:none; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;" onclick="openAdminResetModal('${uid}')">선택초기화</button>
+                            <button style="width:100%; padding:7px 0; background:#fa5252; color:white; border:none; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;" onclick="adminDeleteUser('${uid}')">삭제</button>
                         </div>
                     `;
                     listContainer.appendChild(item);
                 });
             } catch (err) { listContainer.innerHTML = '<div style="text-align:center; color:#fa5252; padding:20px;">권한 오류가 발생했습니다.</div>'; }
         }
+
+
 
         // =========================================================================
         // 🔄 데이터 선택 초기화 제어 (개별 & 전체 통합 모달 엔진)
