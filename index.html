@@ -696,13 +696,9 @@ body.tuktak-mode .main-container {
                     </div>
                 </div>
                 
-                <!-- 💡 [수정] 녹음하기 전에 바로 패스할 수 있도록 버튼 배치 -->
-                <div class="card-actions-wrapper" id="action-speak" style="display:flex; gap:2px;">
-                    <button class="next-btn" id="btn-speak-record" style="flex: 3; background:#5ba4ff;" onclick="startRecording()">
+               <div class="card-actions-wrapper" id="action-speak">
+                    <button class="next-btn" id="btn-speak-record" style="width:100%; background:#5ba4ff;" onclick="startRecording()">
                         🎤 녹음 시작하기
-                    </button>
-                    <button class="next-btn" id="btn-pass-card" style="flex: 1; background:#f1f3f5; color:#868e96; display:none; font-size:14px;" onclick="passCard()">
-                        패스 ⏭️
                     </button>
                 </div>
 
@@ -753,14 +749,18 @@ body.tuktak-mode .main-container {
 
     <!-- 모달: UE 확장 -->
     <div class="modal-overlay" id="ue-prompt-modal">
-        <div class="edit-modal" style="text-align:center;">
-            <h3 style="margin-bottom:24px; line-height:1.4; font-size:18px;">해당 문장을 바로<br>줍줍으로 담겠습니까?</h3>
-            <div style="display:flex; gap:10px; justify-content:center;">
-                <button style="flex:1; padding:14px; background:#4dabf7; color:white; border:none; border-radius:12px; font-weight:800; cursor:pointer;" onclick="uePromptYes()">예 (원본 담기)</button>
-                <button style="flex:1; padding:14px; background:#ff6b6b; color:white; border:none; border-radius:12px; font-weight:800; cursor:pointer;" onclick="uePromptModify()">문장 변형</button>
+        <div class="edit-modal" style="max-width: 320px; padding: 24px 20px; text-align:center;">
+            <h3 style="margin-bottom:20px; line-height:1.4; font-size:16px;">해당 문장을 바로<br>줍줍으로 담겠습니까?</h3>
+            <div style="display:flex; gap:6px; justify-content:center;">
+                <!-- 💡 세 버튼 모두 TOP 버튼과 동일한 그레이(#ced4da) 컬러로 통일! -->
+                <button style="flex:1; padding:12px 0; background:#ced4da; color:#343a40; border:none; border-radius:10px; font-weight:800; font-size:14px; cursor:pointer;" onclick="uePromptPass()">패스</button>
+                <button style="flex:1; padding:12px 0; background:#ced4da; color:#343a40; border:none; border-radius:10px; font-weight:800; font-size:14px; cursor:pointer;" onclick="uePromptYes()">원본 담기</button>
+                <button style="flex:1; padding:12px 0; background:#ced4da; color:#343a40; border:none; border-radius:10px; font-weight:800; font-size:14px; cursor:pointer;" onclick="uePromptModify()">문장 변형</button>
             </div>
         </div>
     </div>
+
+
 
     <!-- 모달: 장바구니 담기(수정) -->
     <div class="modal-overlay" id="edit-modal">
@@ -976,7 +976,16 @@ body.tuktak-mode .main-container {
         let currentUserUid = null;
         let userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {} };
         let isAdmin = false;
-        let simulatedDate = new Date("2026-10-26T12:00:00");
+        
+	// 💡 [수정2-1] 무조건 한국 시간(KST) 강제 적용
+        function getKSTDate() {
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            return new Date(utc + (9 * 3600000));
+        }
+        let simulatedDate = getKSTDate();
+        let lastRenderedDate = simulatedDate.getDate();
+
 
         // 리스트 재생 관련
         let globalTempLists = [];
@@ -1037,23 +1046,25 @@ body.tuktak-mode .main-container {
 
                 if (overlay) overlay.classList.remove('active');
                 document.body.classList.add('app-loaded');
-                updateDateDisplay(); 
+                
+                // 💡 [수정1] 하얀 화면 방지: 데이터를 기다리지 않고 트래커 화면부터 즉시 렌더링
+                setTimeout(() => { switchView('tracker'); }, 50);
 
-                try {
-                    const docSnap = await db.collection("studyUsers").doc(currentUserUid).get({ source: 'server' }).catch(() => db.collection("studyUsers").doc(currentUserUid).get());
+                db.collection("studyUsers").doc(currentUserUid).get({ source: 'server' })
+                .catch(() => db.collection("studyUsers").doc(currentUserUid).get())
+                .then(docSnap => {
                     if (docSnap.exists) {
                         userDB = docSnap.data();
                         ensureUserDBStructure();
                     } else {
                         userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {}, passwordChanged: false };
                     }
-
                     if (userDB.passwordChanged !== true) document.getElementById('pw-change-modal').classList.add('active');
                     
                     userDB.lastLoginAt = new Date().toISOString();
                     saveDB(); 
                     updateDateDisplay(); 
-                } catch (e) { console.error("백그라운드 데이터 로드 실패:", e); }
+                }).catch(e => console.error("백그라운드 데이터 로드 실패:", e));
             } else {
                 currentUserUid = null; isAdmin = false;
                 userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {} };
@@ -1424,15 +1435,32 @@ body.tuktak-mode .main-container {
             return { m, d, h, min };
         }
 
-        // 💡 [수정] 상단 메인 시계를 한국 시간으로 강제 고정
         function updateDateDisplay() {
-            const now = new Date();
+            simulatedDate = getKSTDate(); // 💡 매초 한국 시간 동기화
+
             const options = { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
-            const timeString = now.toLocaleString('ko-KR', options);
+            const timeString = simulatedDate.toLocaleString('ko-KR', options);
             
             const displayEl = document.getElementById('currentDateDisplay');
             if (displayEl) displayEl.innerText = `📅 ${timeString}`;
             
+            if (simulatedDate.getDate() !== lastRenderedDate) {
+                lastRenderedDate = simulatedDate.getDate();
+                if(document.getElementById('view-tracker').classList.contains('active')) renderTracker();
+            }
+
+            // 💡 [수정2-2] 새벽 0시~1시 59분까지만 표시하고, 2시 00분부터 숨김!
+            const toggleBtn = document.getElementById('btn-toggle-mission-day');
+            if (toggleBtn) {
+                const hour = simulatedDate.getHours();
+                if (hour >= 0 && hour < 2) { 
+                    toggleBtn.style.display = 'block'; 
+                } else {
+                    toggleBtn.style.display = 'none';
+                    if (typeof isYesterdayMissionMode !== 'undefined' && isYesterdayMissionMode) toggleYesterdayMission();
+                }
+            }
+
             setTimeout(() => {
                 if(document.getElementById('view-tracker').classList.contains('active')) renderTracker();
                 if(document.getElementById('view-learn').classList.contains('active')) renderLearnTable();
@@ -1534,8 +1562,12 @@ body.tuktak-mode .main-container {
         };
 
          function renderTracker() {
-            // 가상 시뮬레이터 날짜(simulatedDate)를 기준으로 오늘 며칠째인지 계산
-            const today = new Date(simulatedDate);
+            // 💡 [수정2-3] 무조건 한국 시간 기준으로 미션 계산
+            const today = getKSTDate(); 
+            if (typeof isYesterdayMissionMode !== 'undefined' && isYesterdayMissionMode) {
+                today.setDate(today.getDate() - 1);
+            }
+
             let count = 0; 
             let cur = new Date("2026-10-26T12:00:00"); 
             let end = new Date(today);
@@ -2234,6 +2266,25 @@ body.tuktak-mode .main-container {
             launchTuktakView();
         }
 
+
+	// 💡 팝업창에서 패스 처리
+        function uePromptPass() {
+            document.getElementById('ue-prompt-modal').classList.remove('active');
+            const card = currentDeck[currentCardIndex];
+            const key = card.ch + "_" + card.eng;
+            userDB.cardStats[key] = '패스'; 
+            
+            if (currentTaskId) {
+                let nextIdx = currentCardIndex + 1;
+                if (nextIdx > maxReachedIndex) {
+                    maxReachedIndex = nextIdx;
+                    userDB["progress_" + currentTaskId] = maxReachedIndex;
+                }
+            }
+            saveDB();
+            currentCardIndex++;
+            showCard();
+        }
 
 
 
