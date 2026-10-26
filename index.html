@@ -975,16 +975,21 @@ body.tuktak-mode .main-container {
 
         let currentUserUid = null;
         let userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {} };
-        let isAdmin = false;
         
-	// 💡 [수정2-1] 무조건 한국 시간(KST) 강제 적용
+        let isAdmin = false;
+
+        // 💡 [수정2-1] 무조건 한국 시간(KST) 강제 적용
         function getKSTDate() {
-            const now = new Date();
-            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-            return new Date(utc + (9 * 3600000));
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+            }).formatToParts(new Date());
+            const get = type => Number(parts.find(p => p.type === type).value);
+            return new Date(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
         }
         let simulatedDate = getKSTDate();
         let lastRenderedDate = simulatedDate.getDate();
+
 
 
         // 리스트 재생 관련
@@ -1218,7 +1223,10 @@ body.tuktak-mode .main-container {
                     let lastLoginStr = "기록 없음";
                     if (data.lastLoginAt) {
                         let d = new Date(data.lastLoginAt);
-                        lastLoginStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes()}`;
+                        lastLoginStr = new Intl.DateTimeFormat('ko-KR', {
+                            timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric',
+                            hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+                        }).format(d);
                     }
                     
                     const completedMap = data.completedTasks || {};
@@ -1243,8 +1251,9 @@ body.tuktak-mode .main-container {
                                 missionDate.setDate(missionDate.getDate() + 1);
                                 if (missionDate.getDay() !== 0 && missionDate.getDay() !== 6) addedDays++;
                             }
-                            let deadline = new Date(missionDate); deadline.setDate(deadline.getDate() + 1); deadline.setHours(2, 0, 0, 0);
-                            if (simDateObj >= deadline) {
+                            let deadlineDay = new Date(missionDate); deadlineDay.setDate(deadlineDay.getDate() + 1);
+                            let deadline = new Date(`${deadlineDay.getFullYear()}-${String(deadlineDay.getMonth()+1).padStart(2,'0')}-${String(deadlineDay.getDate()).padStart(2,'0')}T02:00:00+09:00`);
+                            if (new Date() >= deadline) {
                                 let taskId = `CH${chStr}-${dayLabel}`; let isFinished = false;
                                 if (completedMap[taskId] && completedMap[taskId] !== false) {
                                     if (new Date(completedMap[taskId]) <= deadline) isFinished = true;
@@ -1438,7 +1447,7 @@ body.tuktak-mode .main-container {
         function updateDateDisplay() {
             simulatedDate = getKSTDate(); // 💡 매초 한국 시간 동기화
 
-            const options = { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
             const timeString = simulatedDate.toLocaleString('ko-KR', options);
             
             const displayEl = document.getElementById('currentDateDisplay');
@@ -1646,9 +1655,9 @@ body.tuktak-mode .main-container {
                     if (item.isCompleted) {
                         if (typeof item.completedVal === 'string') {
                             let d = new Date(item.completedVal);
-                            let m = d.getMonth() + 1; let day = d.getDate();
-                            let h = d.getHours(); let min = d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes();
-                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ ${m}월 ${day}일 ${h}:${min} 학습 완료</div>`;
+                            let parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d);
+                            let get = type => Number(parts.find(p => p.type === type).value);
+                            let m = get('month'), day = get('day'), h = get('hour'), min = String(get('minute')).padStart(2, '0');                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ ${m}월 ${day}일 ${h}:${min} 학습 완료</div>`;
                         } else {
                             completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ 완료됨</div>`;
                         }
