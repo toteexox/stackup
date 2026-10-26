@@ -711,9 +711,17 @@ body.tuktak-mode .main-container {
                         🔄 재녹음하기
                     </button>
                 </div>
+                <!-- 🎯 녹음 후 하단 단계별 버튼 -->
+                <div class="card-actions-wrapper" id="score-controls" style="display:none;">
+                    <div class="eval-btn-group">
+                        <button class="eval-btn btn-fluent" onclick="selectCardScore('술술')">술술</button>
+                        <button class="eval-btn btn-hesitant" onclick="selectCardScore('버벅')">버벅</button>
+                        <button class="eval-btn btn-stuck" onclick="selectCardScore('막힘')">막힘</button>
+                    </div>
+                </div>
             </div>
 
-            <!-- 💡 배속 설정을 툭탁 카드 바깥쪽, 왼쪽으로 이동 -->
+             <!-- 💡 배속 설정을 툭탁 카드 바깥쪽, 왼쪽으로 이동 -->
             <div id="card-speed-controls">
                 <span style="font-size: 13px; font-weight: 800; color: #adb5bd; margin-right: 8px;">오디오 배속</span>
                 <div class="speed-options" onclick="event.stopPropagation()">
@@ -750,7 +758,7 @@ body.tuktak-mode .main-container {
     <!-- 모달: UE 확장 -->
     <div class="modal-overlay" id="ue-prompt-modal">
         <div class="edit-modal" style="max-width: 320px; padding: 24px 20px; text-align:center;">
-            <h3 style="margin-bottom:20px; line-height:1.4; font-size:16px;">해당 문장을 바로<br>줍줍으로 담겠습니까?</h3>
+            <h3 style="margin-bottom:20px; line-height:1.4; font-size:16px;">다음 카드로 넘어가기 전<br>이 문장을 줍줍할까요?</h3>
             <div style="display:flex; gap:6px; justify-content:center;">
                 <!-- 💡 세 버튼 모두 TOP 버튼과 동일한 그레이(#ced4da) 컬러로 통일! -->
                 <button style="flex:1; padding:12px 0; background:#ced4da; color:#343a40; border:none; border-radius:10px; font-weight:800; font-size:14px; cursor:pointer;" onclick="uePromptPass()">패스</button>
@@ -975,21 +983,16 @@ body.tuktak-mode .main-container {
 
         let currentUserUid = null;
         let userDB = { completedTasks: {}, jubs: [], cardStats: {}, cardMemos: {} };
-        
         let isAdmin = false;
-
-        // 💡 [수정2-1] 무조건 한국 시간(KST) 강제 적용
+        
+	// 💡 [수정2-1] 무조건 한국 시간(KST) 강제 적용
         function getKSTDate() {
-            const parts = new Intl.DateTimeFormat('en-US', {
-                timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
-            }).formatToParts(new Date());
-            const get = type => Number(parts.find(p => p.type === type).value);
-            return new Date(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            return new Date(utc + (9 * 3600000));
         }
         let simulatedDate = getKSTDate();
         let lastRenderedDate = simulatedDate.getDate();
-
 
 
         // 리스트 재생 관련
@@ -1223,10 +1226,7 @@ body.tuktak-mode .main-container {
                     let lastLoginStr = "기록 없음";
                     if (data.lastLoginAt) {
                         let d = new Date(data.lastLoginAt);
-                        lastLoginStr = new Intl.DateTimeFormat('ko-KR', {
-                            timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric',
-                            hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
-                        }).format(d);
+                        lastLoginStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes()}`;
                     }
                     
                     const completedMap = data.completedTasks || {};
@@ -1251,9 +1251,8 @@ body.tuktak-mode .main-container {
                                 missionDate.setDate(missionDate.getDate() + 1);
                                 if (missionDate.getDay() !== 0 && missionDate.getDay() !== 6) addedDays++;
                             }
-                            let deadlineDay = new Date(missionDate); deadlineDay.setDate(deadlineDay.getDate() + 1);
-                            let deadline = new Date(`${deadlineDay.getFullYear()}-${String(deadlineDay.getMonth()+1).padStart(2,'0')}-${String(deadlineDay.getDate()).padStart(2,'0')}T02:00:00+09:00`);
-                            if (new Date() >= deadline) {
+                            let deadline = new Date(missionDate); deadline.setDate(deadline.getDate() + 1); deadline.setHours(2, 0, 0, 0);
+                            if (simDateObj >= deadline) {
                                 let taskId = `CH${chStr}-${dayLabel}`; let isFinished = false;
                                 if (completedMap[taskId] && completedMap[taskId] !== false) {
                                     if (new Date(completedMap[taskId]) <= deadline) isFinished = true;
@@ -1447,7 +1446,7 @@ body.tuktak-mode .main-container {
         function updateDateDisplay() {
             simulatedDate = getKSTDate(); // 💡 매초 한국 시간 동기화
 
-            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            const options = { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
             const timeString = simulatedDate.toLocaleString('ko-KR', options);
             
             const displayEl = document.getElementById('currentDateDisplay');
@@ -1655,9 +1654,9 @@ body.tuktak-mode .main-container {
                     if (item.isCompleted) {
                         if (typeof item.completedVal === 'string') {
                             let d = new Date(item.completedVal);
-                            let parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d);
-                            let get = type => Number(parts.find(p => p.type === type).value);
-                            let m = get('month'), day = get('day'), h = get('hour'), min = String(get('minute')).padStart(2, '0');                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ ${m}월 ${day}일 ${h}:${min} 학습 완료</div>`;
+                            let m = d.getMonth() + 1; let day = d.getDate();
+                            let h = d.getHours(); let min = d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes();
+                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ ${m}월 ${day}일 ${h}:${min} 학습 완료</div>`;
                         } else {
                             completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ 완료됨</div>`;
                         }
@@ -2252,6 +2251,7 @@ body.tuktak-mode .main-container {
             const progressKey = "progress_" + currentTaskId;
             currentCardIndex = 0; 
             maxReachedIndex = 0;
+            uePromptHandled.clear();
 
             isRandomMode = false;
             const btnRandom = document.getElementById('btn-random-play');
@@ -2279,23 +2279,8 @@ body.tuktak-mode .main-container {
 	// 💡 팝업창에서 패스 처리
         function uePromptPass() {
             document.getElementById('ue-prompt-modal').classList.remove('active');
-            const card = currentDeck[currentCardIndex];
-            const key = card.ch + "_" + card.eng;
-            userDB.cardStats[key] = '패스'; 
-            
-            if (currentTaskId) {
-                let nextIdx = currentCardIndex + 1;
-                if (nextIdx > maxReachedIndex) {
-                    maxReachedIndex = nextIdx;
-                    userDB["progress_" + currentTaskId] = maxReachedIndex;
-                }
-            }
-            saveDB();
-            currentCardIndex++;
-            showCard();
+            advanceToNextCard();
         }
-
-
 
         function startBurningMode() {
             const list = globalTempLists[currentListIdx];
@@ -2395,8 +2380,44 @@ body.tuktak-mode .main-container {
         }
 
 
+        // 🎯 툭탁 단계: record → score → UE(2일차만) → review
+        let ueChoicePending = false;
+        let uePromptHandled = new Set();
+        function isUeDay2() {
+            const card = currentDeck[currentCardIndex];
+            return !!(currentTaskId && currentTaskId.includes('2일차') && card && card.badge.includes('UE'));
+        }
+        function showCardStep(step) {
+            ['action-speak','score-controls','user-record-controls'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            const target = { record:'action-speak', score:'score-controls', review:'user-record-controls' }[step];
+            if (target) document.getElementById(target).style.display = step === 'review' ? 'flex' : 'flex';
+            document.getElementById('card-nav-buttons').style.display = (step === 'review' || step === 'score') ? 'flex' : 'none';
+        }
+        function showReviewStep() {
+            isAnswerRevealed = true;
+            document.getElementById('eng-half').classList.add('revealed');
+            document.getElementById('eng-half').onclick = null;
+            showCardStep('review'); updateJubButtonState();
+        }
+        function selectCardScore(status) {
+            const card = currentDeck[currentCardIndex], key = card.ch + '_' + card.eng;
+            userDB.cardStats[key] = status;
+            if (currentTaskId) {
+                maxReachedIndex = Math.max(maxReachedIndex, currentCardIndex + 1);
+                userDB['progress_' + currentTaskId] = maxReachedIndex;
+            }
+            saveDB();
+            const badge = document.getElementById('tuktak-status');
+            badge.style.display = 'block'; badge.innerText = status;
+            const colors = { '술술':['#d3f9d8','#2b8a3e'], '버벅':['#fff3bf','#f59f00'], '막힘':['#ffe3e3','#e03131'] };
+            [badge.style.background,badge.style.color] = colors[status];
+            showReviewStep();
+        }
         function showCard() {
-            stopNativeAudio(); stopAutoPlayTimer();
+            stopNativeAudio(); stopAutoPlayTimer(); ueChoicePending = false;
+            showCardStep('record');
             if (currentCardIndex >= currentDeck.length) { finishTuktak(); return; }
 
             const card = currentDeck[currentCardIndex];
@@ -2427,15 +2448,16 @@ body.tuktak-mode .main-container {
             if (card.ipa) { ipaEl.innerHTML = `🎧 ${card.ipa}`; } else { ipaEl.innerHTML = `🎧 음성 듣기`; }
             ipaEl.style.display = 'inline-block';
             
+            // 💡 성취도 배지: 술술 / 버벅 / 막힘 / 미평가 (줍줍 패스는 성취도가 아님)
             const prevStatus = userDB.cardStats[cardKey];
             const statusBadge = document.getElementById('tuktak-status');
-            
-            if (prevStatus) {
-                statusBadge.style.display = 'block'; statusBadge.innerText = prevStatus;
-                if (prevStatus === '술술') { statusBadge.style.background = '#d3f9d8'; statusBadge.style.color = '#2b8a3e'; }
-                else if (prevStatus === '버벅') { statusBadge.style.background = '#fff3bf'; statusBadge.style.color = '#f59f00'; }
-                else { statusBadge.style.background = '#ffe3e3'; statusBadge.style.color = '#e03131'; }
-            } else { statusBadge.style.display = 'none'; }
+            const statusColors = {
+                '술술': ['#d3f9d8', '#2b8a3e'], '버벅': ['#fff3bf', '#f59f00'],
+                '막힘': ['#ffe3e3', '#e03131'], '미평가': ['#e9ecef', '#868e96']
+            };
+            const status = ['술술', '버벅', '막힘'].includes(prevStatus) ? prevStatus : '미평가';
+            statusBadge.style.display = 'block'; statusBadge.innerText = status;
+            [statusBadge.style.background, statusBadge.style.color] = statusColors[status];
 
             if (sessionAudioCache[cardKey]) {
                 userAudioUrl = sessionAudioCache[cardKey];
@@ -2469,6 +2491,7 @@ body.tuktak-mode .main-container {
                 document.getElementById('card-nav-buttons').style.display = 'none';
             }
 
+            showCardStep(isPastCard ? 'review' : 'record');
             const speedControls = document.getElementById('card-speed-controls');
             if (speedControls) {
                 if (card.eng !== card.originalEng || !card.audio) speedControls.style.display = 'none';
@@ -2483,22 +2506,13 @@ body.tuktak-mode .main-container {
             isAnswerRevealed = true;
             document.getElementById('eng-half').classList.add('revealed');
             document.getElementById('eng-half').onclick = null;
-            document.getElementById('action-speak').style.display = 'none';
-            document.getElementById('user-record-controls').style.display = 'flex';
-            document.getElementById('card-nav-buttons').style.display = 'flex';
-
-            // 💡 [핵심 추가] 정답을 확인하면 해당 카드는 학습한 것으로 간주하여 즉시 진도 갱신
+            if (!isAutoPlayActive) showCardStep('score');
             if (currentTaskId) {
-                let nextIdx = currentCardIndex + 1;
-                if (nextIdx > maxReachedIndex) {
-                    maxReachedIndex = nextIdx;
-                    userDB["progress_" + currentTaskId] = maxReachedIndex;
-                    saveDB();
-                }
+                maxReachedIndex = Math.max(maxReachedIndex, currentCardIndex + 1);
+                userDB['progress_' + currentTaskId] = maxReachedIndex;
+                saveDB();
             }
         }
-
-
 
         function showAutoPlayNotice(msg) {
             let existing = document.getElementById('autoplay-toast-popup'); if (existing) existing.remove();
@@ -2561,146 +2575,82 @@ body.tuktak-mode .main-container {
             }, thinkTimeMs);
         }
 
+        // 🎤 안정적인 녹음: 먼저 마이크 준비 → 녹음 시작 → 실제 종료 후 평가
+        let recordingBusy = false;
         async function startRecording() {
+            if (recordingBusy || (mediaRecorder && mediaRecorder.state === 'recording')) return;
             const btn = document.getElementById('btn-speak-record');
-            btn.innerHTML = '⏳ 준비 중...'; btn.style.background = '#adb5bd'; btn.disabled = true;
-
+            const lockedCardIndex = currentCardIndex, card = currentDeck[lockedCardIndex];
+            if (!card) return;
+            recordingBusy = true; btn.disabled = true; btn.innerText = '⏳ 마이크 준비 중...';
             try {
-                if (!globalAudioStream || !globalAudioStream.active) {
+                if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw Error('지원하지 않는 브라우저입니다.');
+                if (!globalAudioStream || !globalAudioStream.active || !globalAudioStream.getAudioTracks().some(t => t.readyState === 'live')) {
                     globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 }
-                
-                const lockedCardIndex = currentCardIndex;
-                const card = currentDeck[lockedCardIndex];
-                const cardKey = card.ch + "_" + card.eng; // 💡 eng로 변경
-
-                const startRecordProcess = (stream) => {
-                    mediaRecorder = new MediaRecorder(stream); 
-                    audioChunks = [];
-                    mediaRecorder.ondataavailable = e => { 
-                        if(e.data && e.data.size > 0) audioChunks.push(e.data); 
-                    };
-                    
-                    mediaRecorder.onstop = () => {
-                        const mimeType = mediaRecorder.mimeType || 'audio/mp4'; 
-                        const audioBlob = new Blob(audioChunks, { type: mimeType }); 
-                        
-                        const reader = new FileReader();
-                        reader.readAsDataURL(audioBlob);
-                        reader.onloadend = () => {
-                            const base64String = reader.result;
-                            sessionAudioCache[cardKey] = base64String;
-
-                            if (currentCardIndex === lockedCardIndex) {
-                                userAudioUrl = base64String;
-                                const player = document.getElementById('user-audio-player');
-                                if (player) {
-                                    player.src = base64String;
-                                    player.load(); 
-                                }
-
-                                if (!isAutoPlayActive) {
-                                    document.getElementById('eval-popup-eng').innerText = card.eng;
-                                    document.getElementById('eval-popup-modal').classList.add('active');
-                                }
-                            }
-                        };
-                    };
-
-                    mediaRecorder.start(); 
+                if (currentCardIndex !== lockedCardIndex) return;
+                stopNativeAudio();
+                const chunks = [], recorder = new MediaRecorder(globalAudioStream);
+                audioChunks = chunks; // 기존 자동학습 모드와 호환
+                mediaRecorder = recorder;
+                recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+                recorder.onerror = e => { recordingBusy = false; console.error('녹음 오류:', e); alert('녹음 중 오류가 발생했습니다. 다시 시도해 주세요.'); };
+                recorder.onstop = () => {
+                    recordingBusy = false;
                     btn.disabled = false;
-                    btn.innerHTML = '🛑 녹음 중지';
-                    btn.style.background = '#fa5252';
-                    btn.onclick = stopRecording;
+                    if (!chunks.length) { btn.innerText = '🎤 녹음 시작하기'; btn.onclick = startRecording; alert('녹음 파일이 비어 있습니다. 다시 녹음해 주세요.'); return; }
+                    const blob = new Blob(chunks, { type: recorder.mimeType || chunks[0].type || 'audio/webm' });
+                    const key = card.ch + '_' + card.eng;
+                    if (sessionAudioCache[key]?.startsWith('blob:')) URL.revokeObjectURL(sessionAudioCache[key]);
+                    sessionAudioCache[key] = URL.createObjectURL(blob);
+                    if (currentCardIndex !== lockedCardIndex || isAutoPlayActive) return;
+                    userAudioUrl = sessionAudioCache[key];
+                    const player = document.getElementById('user-audio-player');
+                    player.pause(); player.src = userAudioUrl; player.load();
+                    isAnswerRevealed = true;
+                    document.getElementById('eng-half').classList.add('revealed');
+                    document.getElementById('eng-half').onclick = null;
+                    showCardStep('score');
                 };
-
-                if (globalAudioStream && globalAudioStream.active) {
-                    startRecordProcess(globalAudioStream);
-                } else {
-                    globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    startRecordProcess(globalAudioStream);
-                }
+                recorder.start();
+                btn.innerText = '🛑 녹음 중지'; btn.style.background = '#fa5252';
+                btn.onclick = stopRecording; btn.disabled = false;
             } catch (err) {
-                btn.disabled = false;
-                btn.innerHTML = '🎤 녹음 시작하기';
-                btn.style.background = '#5ba4ff';
-                alert("마이크 권한이 필요합니다. 기기 설정에서 마이크를 허용해 주세요!");
-            }
+                console.error('마이크 준비 실패:', err);
+                btn.innerText = '🎤 녹음 시작하기'; btn.style.background = '#5ba4ff'; btn.onclick = startRecording;
+                alert('마이크를 사용할 수 없습니다. 브라우저 권한과 HTTPS 접속을 확인해 주세요.');
+            } finally { recordingBusy = false; btn.disabled = false; }
         }
-
-
         function stopRecording() {
-            if(mediaRecorder && mediaRecorder.state !== 'inactive') {
-                const btn = document.getElementById('btn-speak-record'); btn.innerHTML = '⏳ 저장 중...'; btn.disabled = true;
-                setTimeout(() => { mediaRecorder.stop(); btn.disabled = false; }, 200); 
-            }
+            if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+            const btn = document.getElementById('btn-speak-record');
+            btn.innerText = '⏳ 녹음 저장 중...'; btn.disabled = true;
+            mediaRecorder.stop();
         }
-
-        function playUserAudio() {
-            stopNativeAudio(); const player = document.getElementById('user-audio-player');
-            if (userAudioUrl) {
-                player.pause(); player.volume = 1.0; player.currentTime = 0;
-                const playPromise = player.play(); if (playPromise !== undefined) { playPromise.catch(e => { console.error("재생 오류:", e); alert("재생에 실패했습니다."); }); }
-            } else { alert("현재 녹음된 파일이 없습니다. [재녹음하기]를 눌러 먼저 녹음해 주세요."); }
+        async function playUserAudio() {
+            stopNativeAudio();
+            const player = document.getElementById('user-audio-player');
+            if (!userAudioUrl) { alert('이 카드의 녹음이 없습니다. 재녹음해 주세요.'); return; }
+            try { player.pause(); player.src = userAudioUrl; player.volume = 1; player.currentTime = 0; await player.play(); }
+            catch (e) { console.error('재생 오류:', e); alert('녹음 재생에 실패했습니다.'); }
         }
-
-
         function reRecord() {
-            stopNativeAudio(); isAnswerRevealed = false;
-            
-            const card = currentDeck[currentCardIndex];
-            if (card) {
-                const cardKey = card.ch + "_" + card.eng; // 💡 eng로 변경
-                delete sessionAudioCache[cardKey];
-            }
-            userAudioUrl = null;
-
-            document.getElementById('eng-half').classList.remove('revealed');
-            document.getElementById('user-record-controls').style.display = 'none';
-            document.getElementById('card-nav-buttons').style.display = 'none';
-            document.getElementById('action-speak').style.display = 'flex';
-            startRecording(); 
+            const player = document.getElementById('user-audio-player'); player.pause();
+            const card = currentDeck[currentCardIndex], key = card.ch + '_' + card.eng;
+            if (sessionAudioCache[key]?.startsWith('blob:')) URL.revokeObjectURL(sessionAudioCache[key]);
+            delete sessionAudioCache[key]; userAudioUrl = null;
+            isAnswerRevealed = true;
+            document.getElementById('eng-half').classList.add('revealed');
+            showCardStep('record');
+            const btn = document.getElementById('btn-speak-record');
+            btn.innerText = '🎤 녹음 시작하기'; btn.style.background = '#5ba4ff'; btn.disabled = false; btn.onclick = startRecording;
+            startRecording();
         }
 
         function evalFromPopup(status) {
             document.getElementById('eval-popup-modal').classList.remove('active');
-            const card = currentDeck[currentCardIndex];
-            const key = card.ch + "_" + card.eng; // 💡 eng로 변경
-            userDB.cardStats[key] = status;
-            
-            if (currentTaskId) {
-                let nextIdx = currentCardIndex + 1;
-                if (nextIdx > maxReachedIndex) {
-                    maxReachedIndex = nextIdx;
-                    userDB["progress_" + currentTaskId] = maxReachedIndex;
-                }
-            }
-            saveDB();
-            
-            isAnswerRevealed = true;
-            document.getElementById('eng-half').classList.add('revealed');
-            document.getElementById('action-speak').style.display = 'none';
-            document.getElementById('user-record-controls').style.display = 'flex';
-            document.getElementById('card-nav-buttons').style.display = 'flex';
-            
-            const statusBadge = document.getElementById('tuktak-status');
-            statusBadge.style.display = 'block';
-            statusBadge.innerText = status;
-            if (status === '술술') { statusBadge.style.background = '#d3f9d8'; statusBadge.style.color = '#2b8a3e'; }
-            else if (status === '버벅') { statusBadge.style.background = '#fff3bf'; statusBadge.style.color = '#f59f00'; }
-            else { statusBadge.style.background = '#ffe3e3'; statusBadge.style.color = '#e03131'; }
-            
-            updateJubButtonState(); 
-
-            if (currentCardIndex === currentDeck.length - 1 && currentTaskId) {
-                alert("🎉 일일 미션을 완료했습니다! 트래커에 'O' 표시로 기록됩니다.");
-                userDB.completedTasks[currentTaskId] = new Date().toISOString(); 
-                delete userDB["progress_" + currentTaskId];
-                saveDB();
-                exitTuktak();
-            }
+            selectCardScore(status);
         }
-
 
         function prevCard(e) {
             if (e) e.stopPropagation(); stopNativeAudio();
@@ -2712,19 +2662,18 @@ body.tuktak-mode .main-container {
 
 
 
-        function nextCard(e) {
-            if(e) e.stopPropagation(); stopNativeAudio();
-            const card = currentDeck[currentCardIndex];
-            if (currentTaskId && currentTaskId.includes('2일차') && card.badge.includes('UE')) {
-                const count = userDB.jubs.filter(j => j.originalEng === card.originalEng).length;
-                if (count === 0) { document.getElementById('ue-prompt-modal').classList.add('active'); return; }
-            }
-            currentCardIndex++;
-            showCard();
+        function advanceToNextCard() {
+            uePromptHandled.add(`${currentTaskId}:${currentCardIndex}`);
+            currentCardIndex++; showCard();
         }
-
-
-
+        function nextCard(e) {
+            if (e) e.stopPropagation(); stopNativeAudio();
+            if (mediaRecorder && mediaRecorder.state === 'recording') return;
+            if (isUeDay2() && !uePromptHandled.has(`${currentTaskId}:${currentCardIndex}`)) {
+                document.getElementById('ue-prompt-modal').classList.add('active'); return;
+            }
+            advanceToNextCard();
+        }
 
         function finishTuktak() {
             if (currentTaskId) { alert("🎉 일일 미션을 완료했습니다! 트래커에 'O' 표시로 기록됩니다."); userDB.completedTasks[currentTaskId] = new Date().toISOString(); delete userDB["progress_" + currentTaskId]; saveDB(); } 
@@ -2738,6 +2687,8 @@ body.tuktak-mode .main-container {
             const evalModal = document.getElementById('eval-popup-modal'); if (evalModal) evalModal.classList.remove('active');
             const btn = document.getElementById('btn-auto-play'); if (btn) btn.classList.remove('active');
             if (globalAudioStream) { globalAudioStream.getTracks().forEach(t => t.stop()); globalAudioStream = null; }
+            Object.values(sessionAudioCache).forEach(url => { if (url?.startsWith('blob:')) URL.revokeObjectURL(url); });
+            sessionAudioCache = {}; userAudioUrl = null; ueChoicePending = false;
             const bottomControls = document.getElementById('bottom-app-controls'); if (bottomControls) bottomControls.style.display = 'flex';
             const pdfBtn = document.getElementById('pdf-download-btn'); if (pdfBtn) pdfBtn.style.display = 'inline-block';
             const activeTabIdx = Array.from(document.querySelectorAll('.nav-tab')).findIndex(t => t.classList.contains('active'));
@@ -2843,7 +2794,7 @@ body.tuktak-mode .main-container {
             document.getElementById('existing-jubs-list').innerHTML = ''; document.getElementById('edit-modal').classList.add('active');
         }
 
-        function closeEditModal() { document.getElementById('edit-modal').classList.remove('active'); }
+        function closeEditModal() { document.getElementById('edit-modal').classList.remove('active'); ueChoicePending = false; }
 
         // 💡 [핵심] 영어 문장이 안 바뀌었다면 발음기호를 실수로 건드렸어도 원본으로 강제 복원 + 캠브리지 미국식 적용
         async function saveEditedJub() {
@@ -2913,6 +2864,7 @@ body.tuktak-mode .main-container {
             saveBtn.innerText = origBtnText; saveBtn.disabled = false;
             alert("장바구니에 안전하게 저장되었습니다!");
             saveDB(); closeEditModal(); updateJubButtonState();
+            if (ueChoicePending) { ueChoicePending = false; advanceToNextCard(); }
         }
 
         // 💡 꼬부기 데이터 내의 검증된 캠브리지 IPA 조각들을 조합해 완벽한 미국식 발음기호를 만드는 엔진
@@ -3011,10 +2963,14 @@ body.tuktak-mode .main-container {
         // =========================================================================
         function uePromptYes() {
             const card = currentDeck[currentCardIndex];
-            userDB.jubs.push({ id: Date.now().toString(), ch: currentChStr, baseType: card.baseType || "Unknown", section: card.badge, kor: card.kor, eng: card.originalEng, ipa: card.ipa || "", audio: card.audio || "", start: card.start || 0, end: card.end || 0, originalEng: card.originalEng });
-            saveDB(); document.getElementById('ue-prompt-modal').classList.remove('active'); currentCardIndex++; showCard();
+            const exists = userDB.jubs.some(j => j.ch === card.ch && j.originalEng === card.originalEng && j.eng === card.originalEng);
+            if (!exists) userDB.jubs.push({ id: Date.now().toString(), ch: currentChStr, baseType: card.baseType || 'Unknown', section: card.badge, kor: card.kor, eng: card.originalEng, ipa: card.ipa || '', audio: card.audio || '', start: card.start || 0, end: card.end || 0, originalEng: card.originalEng });
+            saveDB(); document.getElementById('ue-prompt-modal').classList.remove('active'); advanceToNextCard();
         }
-        function uePromptModify() { document.getElementById('ue-prompt-modal').classList.remove('active'); openEditModal(); }
+        function uePromptModify() {
+            document.getElementById('ue-prompt-modal').classList.remove('active');
+            ueChoicePending = true; openEditModal();
+        }
 
         // 📄 [최종] 헤더 고정 및 하단 중앙 페이지 번호가 포함된 A4 2열 문서 오픈 함수
         function downloadJubsAsA4PDF() {
