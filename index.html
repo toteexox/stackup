@@ -351,14 +351,23 @@ body.tuktak-mode .date-simulator {
 .icon-btn.jub-btn.active { color: #e67700; opacity: 1; }
 .jub-badge { display: inline-block; margin-left: 4px; padding: 2px 6px; border-radius: 10px; background: #adb5bd; color: #fff; font-size: 11px; font-weight: 800; transition: background .2s; }
 /* 2. 카드 이전/다음 버튼 컴팩트 스타일 (동그라미 제거, 삼각형 화살표) */
+/* 💡 화살표들을 감싸는 박스의 사이 간격(gap)을 2px로 확 줄임 */
 #card-nav-buttons { 
     position: absolute; right: 20px; bottom: 15px; z-index: 20; 
-    display: none; gap: 16px; align-items: center; 
+    display: none; 
+    gap: 6px; /* 기존 16px 등에서 2px로 대폭 축소 */
+    align-items: center; 
 }
+
+/* 💡 버튼 자체의 너비도 줄여서 서로 찰싹 달라붙게 만듦 */
 .nav-arrow-btn { 
     display: flex; justify-content: center; align-items: center; 
-    width: 28px; height: 28px; border: none; background: transparent; 
-    color: #9aa0a6; font-size: 20px; cursor: pointer; transition: transform .15s, color .15s; 
+    width: 30px; /* 기존 40px에서 30px로 축소하여 밀착 */
+    height: 40px; 
+    border: none; background: transparent; 
+    color: #adb5bd; 
+    font-size: 22px; 
+    cursor: pointer; transition: transform .15s, color .15s; 
     padding: 0; box-shadow: none;
 }
 .nav-arrow-btn:hover { color: var(--primary-strong); transform: scale(1.15); }
@@ -495,6 +504,7 @@ body.tuktak-mode .main-container {
 /* 14. TOP 버튼 내부 아이콘 */
 #btn-scroll-top .fa-arrow-up { font-size:12px; margin-bottom:1px; }
 #btn-scroll-top span { font-size:9px; letter-spacing:-.5px; }
+
 
 
 
@@ -678,19 +688,24 @@ body.tuktak-mode .main-container {
                             <div class="text-content eng-text" id="tuktak-eng"></div>
                             <div class="ipa-text" id="tuktak-ipa" onclick="playNativeAudio(event)" title="클릭하여 음성 듣기" style="box-shadow: 0 2px 8px rgba(0,0,0,0.06);"></div>
                         </div>
-                        <!-- 💡 컴팩트한 화살표 버튼 (꼬부기 스타일) -->
+                        <!-- 💡 코치님이 선호하시는 심플한 텍스트 화살표 스타일 (누적복습 스타일) -->
                         <div id="card-nav-buttons">
-                            <button class="nav-arrow-btn" onclick="prevCard(event)"><i class="fas fa-caret-left" style="font-size:24px;"></i></button>
-                            <button class="nav-arrow-btn" onclick="nextCard(event)"><i class="fas fa-caret-right" style="font-size:24px;"></i></button>
+                            <button class="nav-arrow-btn" onclick="prevCard(event)">◀</button>
+                            <button class="nav-arrow-btn" onclick="nextCard(event)">▶</button>
                         </div>
                     </div>
                 </div>
                 
-                <div class="card-actions-wrapper" id="action-speak">
-                    <button class="next-btn" id="btn-speak-record" style="background:#5ba4ff;" onclick="startRecording()">
+                <!-- 💡 [수정] 녹음하기 전에 바로 패스할 수 있도록 버튼 배치 -->
+                <div class="card-actions-wrapper" id="action-speak" style="display:flex; gap:2px;">
+                    <button class="next-btn" id="btn-speak-record" style="flex: 3; background:#5ba4ff;" onclick="startRecording()">
                         🎤 녹음 시작하기
                     </button>
+                    <button class="next-btn" id="btn-pass-card" style="flex: 1; background:#f1f3f5; color:#868e96; display:none; font-size:14px;" onclick="passCard()">
+                        패스 ⏭️
+                    </button>
                 </div>
+
                 
                 <div class="card-actions-wrapper" id="user-record-controls" style="display:none; justify-content:space-between; padding:0 10px;">
                     <button style="flex:1; background:#e7f5ff; color:#1864ab; border:none; font-size:16px; font-weight:800; cursor:pointer; margin-right:5px; border-radius:12px;" onclick="playUserAudio()">
@@ -770,21 +785,30 @@ body.tuktak-mode .main-container {
         <div class="edit-modal" style="max-width:440px; text-align:left;">
             <span style="font-size:12px; font-weight:700; color:#868e96;">상황 이해 훈련 카드</span>
             <h3 style="margin-top:4px; margin-bottom:14px; font-size:17px;">대사를 듣고 다음을 생각해 보세요.</h3>
+            
             <div style="background:#f8f9fa; padding:14px; border-radius:12px; margin-bottom:14px; font-size:13px; line-height:1.5; color:#495057; border:1px solid #e9ecef;">
                 <div style="margin-bottom:8px;"><b>1. 지금 무슨 일이 일어나고 있지?</b><br><span style="color:#868e96; font-size:12px;">눈에 보이는 사실만 적어요. 해석은 나중에 해도 돼요.</span></div>
                 <div style="margin-bottom:8px;"><b>2. 화자는 상대방에게 무엇을 해 주고 싶지?</b><br><span style="color:#868e96; font-size:12px;">위로하기, 부담 덜어 주기, 설득하기, 거절하기, 관심 표현하기 등.</span></div>
                 <div style="margin-bottom:8px;"><b>3. 왜 이 말을 지금 했을까?</b><br><span style="color:#868e96; font-size:12px;">상대방의 어떤 말이나 행동에 대한 반응인지 살펴봐요.</span></div>
                 <div><b>4. 상대방은 이 말을 듣고 어떻게 받아들일까?</b><br><span style="color:#868e96; font-size:12px;">안심할 수도 있고, 부담을 덜 수도 있고, 반대로 서운할 수도 있어요.</span></div>
             </div>
-            <div id="context-modal-script" style="background:#e7f5ff; color:#1864ab; padding:12px; border-radius:10px; margin-bottom:14px; font-size:16px; font-weight:800; text-align:center; word-break:keep-all; border:1px solid #a5d8ff;"></div>
+
+            <!-- 💡 영어 스크립트 글씨 크기 확대 (font-size: 24px) -->
+            <div id="context-modal-script" style="background:#e7f5ff; color:#1864ab; padding:16px; border-radius:10px; margin-bottom:14px; font-size:18px; font-weight:800; text-align:center; word-break:keep-all; border:1px solid #a5d8ff;">
+                <!-- 자바스크립트가 여기에 영어를 넣어줍니다 -->
+            </div>
+
             <span class="edit-label">📝 나의 상황 메모</span>
-            <textarea id="context-memo-input" rows="4" placeholder="이 문장이 쓰이는 상황과 느낌을 자유롭게 메모해 보세요."></textarea>
+            <!-- 💡 입력창(textarea) 안의 글씨 크기 확대 (font-size: 18px) -->
+            <textarea id="context-memo-input" rows="4" placeholder="이 문장이 쓰이는 상황과 느낌을 자유롭게 메모해 보세요." style="font-size: 18px; line-height: 1.5; padding: 12px;"></textarea>
+            
             <div class="modal-btns">
                 <button class="btn-cancel" onclick="closeContextModal()">닫기</button>
                 <button class="btn-add-new" onclick="saveContextMemo()">메모 저장</button>
             </div>
         </div>
     </div>
+
 
     <!-- 모달: 전체듣기 설정 -->
     <div class="modal-overlay" id="listen-config-modal">
@@ -1131,7 +1155,7 @@ body.tuktak-mode .main-container {
             } catch (err) { errEl.innerText = err.message; }
         }
 
-        async function renderAdminUserList() {
+       async function renderAdminUserList() {
             const listContainer = document.getElementById('admin-user-list');
             listContainer.innerHTML = '<div style="text-align:center; color:#868e96; padding:20px;">목록 불러오는 중...</div>';
             try {
@@ -1160,18 +1184,26 @@ body.tuktak-mode .main-container {
                 // 총 미션 개수 (12챕터 * 5일차 = 60개)
                 const totalMissionsCount = 12 * 5;
                 
-                // 💡 [요청 반영] 회원 데이터를 배열로 변환한 뒤 이름(displayName) 기준 A-Z 오름차순 정렬
+                // 문서 데이터를 배열로 수집
                 let usersArray = [];
                 snapshot.forEach(doc => {
-                    const uid = doc.id; const data = doc.data();
-                    let displayName = data.userId || (data.email ? data.email.split('@')[0] : (uid === currentUserUid ? "Raina (관리자)" : `사용자 (${uid.substring(0, 6)})`));
-                    usersArray.push({ uid, data, displayName });
+                    usersArray.push({ uid: doc.id, data: doc.data() });
                 });
 
-                usersArray.sort((a, b) => a.displayName.localeCompare(b.displayName, 'en', { numeric: true, sensitivity: 'base' }));
+                // 💡 [요청 반영] 정렬 로직: 관리자(Raina)는 맨 위, 나머지는 알파벳 순(A-Z) 정렬
+                usersArray.sort((a, b) => {
+                    let nameA = (a.data.userId || (a.data.email ? a.data.email.split('@')[0] : "")).toLowerCase();
+                    let nameB = (b.data.userId || (b.data.email ? b.data.email.split('@')[0] : "")).toLowerCase();
+                    
+                    if (nameA === "raina" || a.uid === currentUserUid && nameA.includes("raina")) return -1;
+                    if (nameB === "raina" || b.uid === currentUserUid && nameB.includes("raina")) return 1;
+                    
+                    return nameA.localeCompare(nameB);
+                });
 
-                usersArray.forEach(userObj => {
-                    const uid = userObj.uid; const data = userObj.data; const displayName = userObj.displayName;
+                usersArray.forEach(userItem => {
+                    const uid = userItem.uid; const data = userItem.data;
+                    let displayName = data.userId || (data.email ? data.email.split('@')[0] : (uid === currentUserUid ? "Raina (관리자)" : `사용자 (${uid.substring(0, 6)})`));
                     let lastLoginStr = "기록 없음";
                     if (data.lastLoginAt) {
                         let d = new Date(data.lastLoginAt);
@@ -1236,7 +1268,6 @@ body.tuktak-mode .main-container {
                 });
             } catch (err) { listContainer.innerHTML = '<div style="text-align:center; color:#fa5252; padding:20px;">권한 오류가 발생했습니다.</div>'; }
         }
-
 
 
         // =========================================================================
@@ -1374,10 +1405,30 @@ body.tuktak-mode .main-container {
         // =========================================================================
         // 4. 네비게이션 & UI (탭, 날짜, 공통 로직)
         // =========================================================================
+        // 💡 [신규 추가] 해외 접속자도 무조건 한국 시간(KST)을 반환하게 만드는 만능 함수
+        function getKSTTimeParts(dateObj) {
+            const formatter = new Intl.DateTimeFormat('en-US', { 
+                timeZone: 'Asia/Seoul', 
+                month: 'numeric', day: 'numeric', 
+                hour: 'numeric', minute: 'numeric', hour12: false 
+            });
+            const parts = formatter.formatToParts(dateObj);
+            let m = parts.find(p => p.type === 'month').value;
+            let d = parts.find(p => p.type === 'day').value;
+            let h = parts.find(p => p.type === 'hour').value;
+            let min = parts.find(p => p.type === 'minute').value;
+            
+            if (min.length === 1) min = '0' + min;
+            if (h === '24') h = '00';
+            
+            return { m, d, h, min };
+        }
+
+        // 💡 [수정] 상단 메인 시계를 한국 시간으로 강제 고정
         function updateDateDisplay() {
             const now = new Date();
-            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
-            const timeString = now.toLocaleDateString('ko-KR', options);
+            const options = { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            const timeString = now.toLocaleString('ko-KR', options);
             
             const displayEl = document.getElementById('currentDateDisplay');
             if (displayEl) displayEl.innerText = `📅 ${timeString}`;
@@ -2267,9 +2318,6 @@ body.tuktak-mode .main-container {
         function launchTuktakView() {
             stopNativeAudio();
             
-            // 💡 [핵심] 뷰 전환 전 현재 스크롤 위치 고정
-            const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
-
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             document.getElementById('view-tuktak').classList.add('active');
             document.body.classList.add('tuktak-mode');
@@ -2279,12 +2327,13 @@ body.tuktak-mode .main-container {
             const pdfBtn = document.getElementById('pdf-download-btn');
             if (pdfBtn) pdfBtn.style.display = 'none';
 
-            // 💡 [핵심] 화면이 위로 튀어 오르지 않도록 스크롤 위치 강제 유지
-            window.scrollTo({ top: currentScrollY, behavior: 'instant' });
+            // 🔥 [핵심 원인 제거] 툭탁 모드에 들어갈 때는 무조건 화면 맨 위(top: 0)로 강제 스크롤!
+            window.scrollTo({ top: 0, behavior: 'instant' });
 
             warmupMicrophone(); 
             showCard();
         }
+
 
         function showCard() {
             stopNativeAudio(); stopAutoPlayTimer();
@@ -2299,7 +2348,7 @@ body.tuktak-mode .main-container {
             const korEl = document.getElementById('tuktak-kor');
             if (isTuktakMemoMode) {
                 const savedMemo = userDB.cardMemos && userDB.cardMemos[cardKey] ? userDB.cardMemos[cardKey] : "";
-                if (savedMemo) korEl.innerHTML = `<span style="color:#495057; font-size:19px; font-weight:700; line-height:1.45; display:block; text-align:center;">${savedMemo}</span>`;
+                if (savedMemo) korEl.innerHTML = `<span style="color:#495057; font-size:22px; font-weight:700; line-height:1.45; display:block; text-align:center;">${savedMemo}</span>`;
                 else korEl.innerText = card.kor;
             } else { korEl.innerText = card.kor; }
             
