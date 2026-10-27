@@ -30,8 +30,89 @@
             const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
             return new Date(utc + (9 * 3600000));
         }
+        // ── KST unified calendar / mission deadline ─────────────────────────
+        // Date.toISOString() continues to store UTC instants in Firebase.
+        // All displayed completion/login times and 02:00 deadlines use KST.
+        // UTC calendar arithmetic prevents foreign timezones/DST from changing mission days.
+        const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+        const KST_DAY_MS = 24 * 60 * 60 * 1000;
+        const STUDY_START_KST_DAY = Math.floor(Date.UTC(2026, 9, 26) / KST_DAY_MS);
+
+        function getKSTCalendarParts(instant = new Date()) {
+            const d = new Date(instant.getTime() + KST_OFFSET_MS);
+            const year = d.getUTCFullYear(), month = d.getUTCMonth() + 1, day = d.getUTCDate();
+            return {
+                year, month, day,
+                hour: d.getUTCHours(), minute: d.getUTCMinutes(), second: d.getUTCSeconds(),
+                weekday: d.getUTCDay(),
+                dayIndex: Math.floor(Date.UTC(year, month - 1, day) / KST_DAY_MS)
+            };
+        }
+
+        function getKSTWeekdayAt(dayIndex) {
+            return new Date(dayIndex * KST_DAY_MS).getUTCDay();
+        }
+
+        function isKSTWeekday(dayIndex) {
+            const weekday = getKSTWeekdayAt(dayIndex);
+            return weekday !== 0 && weekday !== 6;
+        }
+
+        // Study-day 0 = 2026-10-26 (Mon); weekends do not increment the study-day count.
+        function getKSTStudyDayNumber(dayIndex) {
+            if (dayIndex < STUDY_START_KST_DAY) return -1;
+            let count = 0;
+            for (let d = STUDY_START_KST_DAY; d < dayIndex; d++) {
+                if (isKSTWeekday(d)) count++;
+            }
+            return count;
+        }
+
+        // Returns the KST civil day scheduled for a given Chapter / N일차 task.
+        function getMissionKSTDayIndex(chStr, dayLabel) {
+            const chapter = Number(chStr);
+            const offset = taskOffsets[dayLabel];
+            if (!Number.isInteger(chapter) || chapter < 1 || chapter > 12 || offset === undefined) return null;
+            const target = (chapter - 1) * 2 + offset;
+            let dayIndex = STUDY_START_KST_DAY, studyDays = 0;
+            while (studyDays < target) {
+                dayIndex++;
+                if (isKSTWeekday(dayIndex)) studyDays++;
+            }
+            return dayIndex;
+        }
+
+        // Deadline = 02:00 KST on the calendar day AFTER the scheduled task day.
+        // Returns a real UTC instant suitable for comparing with ISO completion timestamps.
+        function getMissionDeadlineUTC(chStr, dayLabel) {
+            const dayIndex = getMissionKSTDayIndex(chStr, dayLabel);
+            if (dayIndex === null) return null;
+            return new Date((dayIndex + 1) * KST_DAY_MS + (2 * 60 * 60 * 1000) - KST_OFFSET_MS);
+        }
+
+        function formatKSTTaskTime(timestamp, withYear = false) {
+            const instant = timestamp instanceof Date ? timestamp : new Date(timestamp);
+            if (!Number.isFinite(instant.getTime())) return null;
+            const p = getKSTCalendarParts(instant);
+            const pad = n => String(n).padStart(2, '0');
+            return withYear
+                ? `${p.year}년 ${p.month}월 ${p.day}일 ${pad(p.hour)}:${pad(p.minute)}`
+                : `${p.month}월 ${p.day}일 ${pad(p.hour)}:${pad(p.minute)}`;
+        }
+
+        function isMissionCompletedOnTime(completedValue, deadline) {
+            if (!deadline || completedValue == null || completedValue === false) return false;
+            // Older accounts could have a completion flag without an ISO timestamp.
+            // Preserve those existing checkmarks instead of retroactively penalizing them.
+            if (completedValue === true) return true;
+            let at = completedValue;
+            if (completedValue && typeof completedValue.toDate === 'function') at = completedValue.toDate();
+            const parsed = at instanceof Date ? at : new Date(at);
+            return Number.isFinite(parsed.getTime()) && parsed.getTime() <= deadline.getTime();
+        }
+
         let simulatedDate = getKSTDate();
-        let lastRenderedDate = simulatedDate.getDate();
+        let lastRenderedKSTDayIndex = getKSTCalendarParts().dayIndex;
 
 
         // 리스트 재생 관련
@@ -250,7 +331,8 @@
                 const snapshot = await db.collection("studyUsers").get();
                 listContainer.innerHTML = '';
                 if (snapshot.empty) return listContainer.innerHTML = '<div style="text-align:center; color:#868e96; padding:20px;">등록된 회원이 없습니다.</div>';
-                let simDateObj = new Date(simulatedDate); simDateObj.setHours(12, 0, 0, 0);
+                // Absolute current time, not KST-shaped local Date/noon (prevents premature penalties).
+                const penaltyCheckInstant = new Date();
                 
                 // 전체 문장 개수 사전 계산 (1~12챕터 총 문장 수)
                 let totalSentencesCount = 0;
@@ -294,8 +376,8 @@
                     let displayName = data.userId || (data.email ? data.email.split('@')[0] : (uid === currentUserUid ? "Raina (관리자)" : `사용자 (${uid.substring(0, 6)})`));
                     let lastLoginStr = "기록 없음";
                     if (data.lastLoginAt) {
-                        let d = new Date(data.lastLoginAt);
-                        lastLoginStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes()}`;
+                        const formattedLogin = formatKSTTaskTime(data.lastLoginAt);
+                        if (formattedLogin) lastLoginStr = formattedLogin + ' KST';
                     }
                     
                     const completedMap = data.completedTasks || {};
@@ -312,21 +394,12 @@
 
                     let totalPenalties = 0;
                     for (let ch = 1; ch <= 12; ch++) {
-                        let chStr = ch < 10 ? '0'+ch : ''+ch; let chStartOffset = (ch - 1) * 2;
+                        const chStr = String(ch).padStart(2, '0');
                         Object.keys(taskOffsets).forEach(dayLabel => {
-                            let reqStudyDayCount = chStartOffset + taskOffsets[dayLabel];
-                            let missionDate = new Date("2026-10-26T12:00:00"); let addedDays = 0;
-                            while (addedDays < reqStudyDayCount) {
-                                missionDate.setDate(missionDate.getDate() + 1);
-                                if (missionDate.getDay() !== 0 && missionDate.getDay() !== 6) addedDays++;
-                            }
-                            let deadline = new Date(missionDate); deadline.setDate(deadline.getDate() + 1); deadline.setHours(2, 0, 0, 0);
-                            if (simDateObj >= deadline) {
-                                let taskId = `CH${chStr}-${dayLabel}`; let isFinished = false;
-                                if (completedMap[taskId] && completedMap[taskId] !== false) {
-                                    if (new Date(completedMap[taskId]) <= deadline) isFinished = true;
-                                }
-                                if (!isFinished) totalPenalties++;
+                            const deadline = getMissionDeadlineUTC(chStr, dayLabel);
+                            if (deadline && penaltyCheckInstant.getTime() >= deadline.getTime()) {
+                                const taskId = `CH${chStr}-${dayLabel}`;
+                                if (!isMissionCompletedOnTime(completedMap[taskId], deadline)) totalPenalties++;
                             }
                         });
                     }
@@ -526,8 +599,8 @@
         // 새벽 00:00~01:59(KST) 전날 미션 조회. 새벽 2시 이후에는 자동 복귀.
         let isYesterdayMissionMode = false;
         function toggleYesterdayMission() {
-            const now = getKSTDate();
-            if (!isYesterdayMissionMode && now.getHours() >= 2) return;
+            const now = getKSTCalendarParts();
+            if (!isYesterdayMissionMode && now.hour >= 2) return;
             isYesterdayMissionMode = !isYesterdayMissionMode;
             const btn = document.getElementById('btn-toggle-mission-day');
             if (btn) btn.textContent = isYesterdayMissionMode ? '▶ 오늘 미션' : '◀ 전날 미션';
@@ -536,23 +609,26 @@
         }
 
         function updateDateDisplay() {
-            simulatedDate = getKSTDate(); // 💡 매초 한국 시간 동기화
+            // Header and mission checks are both based on the SAME real instant in KST.
+            const now = new Date();
+            const nowKST = getKSTCalendarParts(now);
+            simulatedDate = getKSTDate(); // Legacy UI compatibility only; not used for deadlines.
 
             const options = { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
-            const timeString = new Date().toLocaleString('ko-KR', options);
+            const timeString = now.toLocaleString('ko-KR', options);
             
             const displayEl = document.getElementById('currentDateDisplay');
             if (displayEl) displayEl.innerText = `📅 ${timeString}`;
             
-            if (simulatedDate.getDate() !== lastRenderedDate) {
-                lastRenderedDate = simulatedDate.getDate();
+            if (nowKST.dayIndex !== lastRenderedKSTDayIndex) {
+                lastRenderedKSTDayIndex = nowKST.dayIndex;
                 if(document.getElementById('view-tracker').classList.contains('active')) renderTracker();
             }
 
             // 💡 [수정2-2] 새벽 0시~1시 59분까지만 표시하고, 2시 00분부터 숨김!
             const toggleBtn = document.getElementById('btn-toggle-mission-day');
             if (toggleBtn) {
-                const hour = simulatedDate.getHours();
+                const hour = nowKST.hour;
                 if (hour >= 0 && hour < 2) { 
                     toggleBtn.style.display = 'block'; toggleBtn.textContent = isYesterdayMissionMode ? '▶ 오늘 미션' : '◀ 전날 미션'; 
                 } else {
@@ -663,25 +739,11 @@
         };
 
          function renderTracker() {
-            // 💡 [수정2-3] 무조건 한국 시간 기준으로 미션 계산
-            const today = getKSTDate(); 
-            if (typeof isYesterdayMissionMode !== 'undefined' && isYesterdayMissionMode) {
-                today.setDate(today.getDate() - 1);
-            }
-
-            let count = 0; 
-            let cur = new Date("2026-10-26T12:00:00"); 
-            let end = new Date(today);
-            cur.setHours(0,0,0,0);
-            end.setHours(0,0,0,0);
-
-            while(cur < end) { 
-                if(cur.getDay() !== 0 && cur.getDay() !== 6) count++; 
-                cur.setDate(cur.getDate() + 1); 
-            }
-            
-            const currentStudyDays = today < new Date("2026-10-26T00:00:00") ? -1 : count;
-            const isWeekend = (today.getDay() === 0 || today.getDay() === 6);
+            // Calendar-day and weekday calculations are fixed to KST for every member.
+            const realKSTDay = getKSTCalendarParts().dayIndex;
+            const visibleKSTDay = realKSTDay - (isYesterdayMissionMode ? 1 : 0);
+            const currentStudyDays = getKSTStudyDayNumber(visibleKSTDay);
+            const isWeekend = !isKSTWeekday(visibleKSTDay);
             
             const grid = document.getElementById('tracker-grid');
             const todoContainer = document.getElementById('todo-list-container');
@@ -705,7 +767,9 @@
                     let isCompleted = completedVal !== undefined && completedVal !== false;
                     let isToday = (!isWeekend && reqDays === currentStudyDays);
                     let isMissed = (reqDays < currentStudyDays) && !isCompleted;
-                    let isFuture = reqDays > currentStudyDays;
+                    // A Monday task must remain locked on Saturday/Sunday even when the
+                    // cumulative weekday counter already equals Monday's study-day number.
+                    let isFuture = getMissionKSTDayIndex(chStr, dayLabel) > visibleKSTDay;
 
                     cell.innerHTML = `
                         <span class="task-icon" style="font-size:16px; margin-bottom:2px;">${uiInfo.icon}</span>
@@ -746,11 +810,9 @@
                     cardEl.onclick = () => startTuktakDaily(item.chStr, item.dayLabel);
                     let completedAtHtml = '';
                     if (item.isCompleted) {
-                        if (typeof item.completedVal === 'string') {
-                            let d = new Date(item.completedVal);
-                            let m = d.getMonth() + 1; let day = d.getDate();
-                            let h = d.getHours(); let min = d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes();
-                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ ${m}월 ${day}일 ${h}:${min} 학습 완료</div>`;
+                        const completedAtKST = typeof item.completedVal === 'string' ? formatKSTTaskTime(item.completedVal) : null;
+                        if (completedAtKST) {
+                            completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ ${completedAtKST} (한국시간) 학습 완료</div>`;
                         } else {
                             completedAtHtml = `<div style="font-size:13px; color:#64748b; margin-top:6px; font-weight:700;">✅ 완료됨</div>`;
                         }
@@ -1239,23 +1301,10 @@
         // 미션 완료 표시와 무관하게 실제 한국 날짜와 해당 미션의 예정 날짜를 비교한다.
         // 어제 미션 보기 모드로 입장한 경우에는 지난 미션이므로 자동학습을 허용한다.
         function isActualTodayMission(chStr, dayLabel) {
-            if (typeof isYesterdayMissionMode !== 'undefined' && isYesterdayMissionMode) return false;
-            const dayOffset = taskOffsets[dayLabel];
-            if (dayOffset === undefined) return false;
-            const chapterNum = Number(chStr);
-            if (!Number.isInteger(chapterNum) || chapterNum < 1 || chapterNum > 12) return false;
-            const now = getKSTDate();
-            const start = new Date('2026-10-26T12:00:00');
-            start.setHours(0, 0, 0, 0);
-            const today = new Date(now);
-            today.setHours(0, 0, 0, 0);
-            if (today < start || now.getDay() === 0 || now.getDay() === 6) return false;
-            let elapsedWeekdays = 0;
-            for (const d = new Date(start); d < today; d.setDate(d.getDate() + 1)) {
-                if (d.getDay() !== 0 && d.getDay() !== 6) elapsedWeekdays++;
-            }
-            const missionIndex = (chapterNum - 1) * 2 + dayOffset;
-            return missionIndex === elapsedWeekdays;
+            if (isYesterdayMissionMode) return false;
+            const kst = getKSTCalendarParts();
+            if (!isKSTWeekday(kst.dayIndex)) return false;
+            return getMissionKSTDayIndex(chStr, dayLabel) === kst.dayIndex;
         }
 
         function startTuktakDaily(chStr, dayLabel) {
