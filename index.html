@@ -2380,12 +2380,8 @@ body.admin-page-mode .nav-tabs { visibility:hidden; pointer-events:none; }
             showCard();
         }
 
-        async function warmupMicrophone() {
-            if (!globalAudioStream || !globalAudioStream.active) {
-                try { globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true }); } 
-                catch (e) { console.log("마이크 사전 예열 대기 중"); }
-            }
-        }
+        // 모바일에서는 사용자 제스처가 있는 녹음 버튼에서 마이크를 요청한다.
+        async function warmupMicrophone() { return; }
 
         function toggleTuktakViewMode() {
             isTuktakMemoMode = !isTuktakMemoMode;
@@ -2414,7 +2410,7 @@ body.admin-page-mode .nav-tabs { visibility:hidden; pointer-events:none; }
 
             if (isRequiredMissionSession) { isAutoPlayActive = false; autoPlayGeneration++; stopAutoPlayTimer(); }
             updateAutoPlayAccess();
-            if (currentTaskId) warmupMicrophone();
+            // 모바일: 화면 진입 시 마이크 권한을 요청하지 않음 (사용자 녹음 버튼에서만 요청)
             showCard();
         }
 
@@ -2624,31 +2620,68 @@ body.admin-page-mode .nav-tabs { visibility:hidden; pointer-events:none; }
             }, thinkSeconds * 1000);
         }
 
-        // 🎤 안정적인 녹음: 먼저 마이크 준비 → 녹음 시작 → 실제 종료 후 평가
+        // 🎤 모바일 호환 녹음: Koboogy 방식처럼 start()/stop()으로 한 번에 수집
         let recordingBusy = false;
+        let microphoneRequest = null;
+        async function acquireRecordingMicrophone() {
+            if (globalAudioStream && globalAudioStream.active &&
+                globalAudioStream.getAudioTracks().some(t => t.readyState === 'live')) return globalAudioStream;
+            if (!microphoneRequest) {
+                microphoneRequest = navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => { globalAudioStream = stream; return stream; })
+                    .finally(() => { microphoneRequest = null; });
+            }
+            return microphoneRequest;
+        }
         async function startRecording() {
-            if (recordingBusy || (mediaRecorder && mediaRecorder.state === 'recording')) return;
+            if (recordingBusy || (mediaRecorder && mediaRecorder.state !== 'inactive')) return;
             const btn = document.getElementById('btn-speak-record');
-            const lockedCardIndex = currentCardIndex, card = currentDeck[lockedCardIndex];
-            if (!card) return;
-            recordingBusy = true; btn.disabled = true; btn.innerText = '⏳ 마이크 준비 중...';
+            const lockedCardIndex = currentCardIndex;
+            const card = currentDeck[lockedCardIndex];
+            if (!card || !btn) return;
+            recordingBusy = true;
+            btn.disabled = true;
+            btn.innerText = '⏳ 마이크 연결 중...';
             try {
-                if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw Error('지원하지 않는 브라우저입니다.');
-                if (!globalAudioStream || !globalAudioStream.active || !globalAudioStream.getAudioTracks().some(t => t.readyState === 'live')) {
-                    globalAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                }
-                if (currentCardIndex !== lockedCardIndex) return;
+                if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || !window.MediaRecorder)
+                    throw new Error('SECURE_CONTEXT_OR_UNSUPPORTED');
+                const stream = await acquireRecordingMicrophone();
+                if (currentCardIndex !== lockedCardIndex || !document.getElementById('view-tuktak').classList.contains('active')) return;
                 stopNativeAudio();
-                const chunks = [], recorder = new MediaRecorder(globalAudioStream);
-                audioChunks = chunks; // 기존 자동학습 모드와 호환
+                // iOS Safari에서 codec 강제 설정이나 작은 timeslice가 빈 Blob을 유발할 수 있어 기본 형식을 우선 사용
+                const recorder = new MediaRecorder(stream);
+                const chunks = [];
+                audioChunks = chunks;
                 mediaRecorder = recorder;
-                recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-                recorder.onerror = e => { recordingBusy = false; console.error('녹음 오류:', e); alert('녹음 중 오류가 발생했습니다. 다시 시도해 주세요.'); };
+                let recordingStartedAt = 0;
+                recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+                recorder.onstart = () => {
+                    recordingStartedAt = Date.now();
+                    if (mediaRecorder !== recorder) return;
+                    btn.innerText = '🛑 녹음 중지';
+                    btn.style.background = '#fa5252';
+                    btn.onclick = stopRecording;
+                    btn.disabled = false;
+                    recordingBusy = false;
+                };
+                recorder.onerror = e => {
+                    console.error('녹음 중 오류:', e.error || e);
+                    btn.innerText = '🎤 녹음 시작하기'; btn.style.background = '#5ba4ff';
+                    btn.onclick = startRecording; btn.disabled = false; recordingBusy = false;
+                };
                 recorder.onstop = () => {
                     recordingBusy = false;
                     btn.disabled = false;
-                    if (!chunks.length) { btn.innerText = '🎤 녹음 시작하기'; btn.onclick = startRecording; alert('녹음 파일이 비어 있습니다. 다시 녹음해 주세요.'); return; }
-                    const blob = new Blob(chunks, { type: recorder.mimeType || chunks[0].type || 'audio/webm' });
+                    btn.style.background = '#5ba4ff';
+                    btn.innerText = '🎤 녹음 시작하기'; btn.onclick = startRecording;
+                    const blob = new Blob(chunks, { type: recorder.mimeType || chunks[0]?.type || 'audio/mp4' });
+                    if (!blob.size) {
+                        console.warn('빈 녹음 데이터:', { state: recorder.state, mimeType: recorder.mimeType,
+                            durationMs: Date.now() - recordingStartedAt, chunkCount: chunks.length,
+                            streamActive: stream.active });
+                        alert('녹음 데이터가 저장되지 않았습니다. 마이크 연결 상태를 확인한 뒤 다시 녹음해 주세요.');
+                        return;
+                    }
                     const key = card.ch + '_' + card.eng;
                     if (sessionAudioCache[key]?.startsWith('blob:')) URL.revokeObjectURL(sessionAudioCache[key]);
                     sessionAudioCache[key] = URL.createObjectURL(blob);
@@ -2661,19 +2694,25 @@ body.admin-page-mode .nav-tabs { visibility:hidden; pointer-events:none; }
                     document.getElementById('eng-half').onclick = null;
                     showCardStep('score');
                 };
-                recorder.start();
-                btn.innerText = '🛑 녹음 중지'; btn.style.background = '#fa5252';
-                btn.onclick = stopRecording; btn.disabled = false;
+                recorder.start(); // Koboogy와 동일: timeslice 및 requestData()를 사용하지 않음
+                btn.innerText = '⏳ 녹음 시작 중...';
             } catch (err) {
-                console.error('마이크 준비 실패:', err);
-                btn.innerText = '🎤 녹음 시작하기'; btn.style.background = '#5ba4ff'; btn.onclick = startRecording;
-                alert('마이크를 사용할 수 없습니다. 브라우저 권한과 HTTPS 접속을 확인해 주세요.');
-            } finally { recordingBusy = false; btn.disabled = false; }
+                console.error('마이크 녹음 시작 실패:', err);
+                const msg = err.name === 'NotAllowedError' ? '마이크 권한이 거부됐습니다. 브라우저에서 허용해 주세요.' :
+                    err.name === 'NotFoundError' ? '사용 가능한 마이크가 없습니다.' :
+                    err.message === 'SECURE_CONTEXT_OR_UNSUPPORTED' ? 'HTTPS 주소에서 Safari/Chrome으로 열어 주세요.' :
+                    '녹음을 시작하지 못했습니다. 마이크 연결을 확인해 주세요.';
+                alert(msg);
+                btn.innerText = '🎤 녹음 시작하기'; btn.style.background = '#5ba4ff';
+                btn.onclick = startRecording; btn.disabled = false;
+            } finally {
+                if (!mediaRecorder || mediaRecorder.state === 'inactive') recordingBusy = false;
+            }
         }
         function stopRecording() {
             if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
             const btn = document.getElementById('btn-speak-record');
-            btn.innerText = '⏳ 녹음 저장 중...'; btn.disabled = true;
+            if (btn) { btn.innerText = '⏳ 녹음 저장 중...'; btn.disabled = true; }
             mediaRecorder.stop();
         }
         async function playUserAudio() {
