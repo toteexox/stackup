@@ -2026,23 +2026,21 @@ function nextCard(e) {
     if (mediaRecorder && mediaRecorder.state === 'recording') return;
     if (recordingBusy || recorderFinalizing) return;
 
-    // 🎯 오늘의 미션에서만 성취도 선택 필수
-    if (isRequiredMissionSession) {
-        const card = currentDeck[currentCardIndex];
+    // 🎯 처음 평가하는 문장은 오늘 미션/지난 미션/버닝모드와 관계없이 성취도 필수.
+    // 이미 평가한 문장은 기존 성취도를 유지하고 팝업 없이 다음으로 이동한다.
+    const card = currentDeck[currentCardIndex];
+    if (card) {
+        const key = card.ch + '_' + card.eng;
+        const score = userDB.cardStats[key];
 
-        if (card) {
-            const key = card.ch + '_' + card.eng;
-            const score = userDB.cardStats[key];
-
-            if (!['술술', '버벅', '막힘'].includes(score)) {
-                document.getElementById('eval-popup-eng').textContent = card.eng;
-                document.getElementById('eval-popup-modal').classList.add('active');
-                return;
-            }
+        if (!['술술', '버벅', '막힘'].includes(score)) {
+            document.getElementById('eval-popup-eng').textContent = card.eng;
+            document.getElementById('eval-popup-modal').classList.add('active');
+            return;
         }
     }
 
-    // 기존 2일차 UE 줍줍 팝업 유지
+    // 기존 2일차 UE 줍줍 팝업 유지 (성취도 저장이 우선).
     if (
         isUeDay2() &&
         !uePromptHandled.has(`${currentTaskId}:${currentCardIndex}`)
