@@ -539,7 +539,7 @@
             simulatedDate = getKSTDate(); // 💡 매초 한국 시간 동기화
 
             const options = { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
-            const timeString = simulatedDate.toLocaleString('ko-KR', options);
+            const timeString = new Date().toLocaleString('ko-KR', options);
             
             const displayEl = document.getElementById('currentDateDisplay');
             if (displayEl) displayEl.innerText = `📅 ${timeString}`;
@@ -1772,7 +1772,7 @@
                 let stream = globalAudioStream;
                 if (!stream || !stream.active || !stream.getAudioTracks().some(t => t.readyState === 'live')) {
                     stream = await navigator.mediaDevices.getUserMedia({
-                        audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+                        audio: true
                     });
                     globalAudioStream = stream;
                 }
@@ -1877,6 +1877,10 @@
                 }
             }
         }
+
+
+
+
 
         function stopRecording() {
             if (!mediaRecorder || mediaRecorder.state !== 'recording' || recorderFinalizing) return;
