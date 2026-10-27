@@ -1940,10 +1940,15 @@
             startRecording();
         }
 
-        function evalFromPopup(status) {
-            document.getElementById('eval-popup-modal').classList.remove('active');
-            selectCardScore(status);
-        }
+function evalFromPopup(status) {
+    document.getElementById('eval-popup-modal').classList.remove('active');
+
+    // 선택한 성취도 저장
+    selectCardScore(status);
+
+    // 성취도 저장 후 기존 다음 카드 흐름으로 이동
+    nextCard();
+}
 
         function prevCard(e) {
             if (e) e.stopPropagation(); stopNativeAudio();
@@ -1959,14 +1964,46 @@
             uePromptHandled.add(`${currentTaskId}:${currentCardIndex}`);
             currentCardIndex++; showCard();
         }
-        function nextCard(e) {
-            if (e) e.stopPropagation(); stopNativeAudio();
-            if (mediaRecorder && mediaRecorder.state === 'recording') return;
-            if (isUeDay2() && !uePromptHandled.has(`${currentTaskId}:${currentCardIndex}`)) {
-                document.getElementById('ue-prompt-modal').classList.add('active'); return;
+
+
+function nextCard(e) {
+    if (e) e.stopPropagation();
+    stopNativeAudio();
+
+    if (mediaRecorder && mediaRecorder.state === 'recording') return;
+    if (recordingBusy || recorderFinalizing) return;
+
+    // 🎯 오늘의 미션에서만 성취도 선택 필수
+    if (isRequiredMissionSession) {
+        const card = currentDeck[currentCardIndex];
+
+        if (card) {
+            const key = card.ch + '_' + card.eng;
+            const score = userDB.cardStats[key];
+
+            if (!['술술', '버벅', '막힘'].includes(score)) {
+                document.getElementById('eval-popup-eng').textContent = card.eng;
+                document.getElementById('eval-popup-modal').classList.add('active');
+                return;
             }
-            advanceToNextCard();
         }
+    }
+
+    // 기존 2일차 UE 줍줍 팝업 유지
+    if (
+        isUeDay2() &&
+        !uePromptHandled.has(`${currentTaskId}:${currentCardIndex}`)
+    ) {
+        document.getElementById('ue-prompt-modal').classList.add('active');
+        return;
+    }
+
+    advanceToNextCard();
+}
+
+
+
+
 
         function finishTuktak() {
             if (currentTaskId) { alert("🎉 일일 미션을 완료했습니다! 트래커에 'O' 표시로 기록됩니다."); userDB.completedTasks[currentTaskId] = new Date().toISOString(); delete userDB["progress_" + currentTaskId]; saveDB(); } 
